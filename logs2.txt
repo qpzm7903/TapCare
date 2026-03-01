@@ -1,0 +1,558 @@
+17:08 📱 腾讯手机管家 360安全卫士
+< 日志
+HUAWEI WATCH GT 6 Pro-BBA
+开屏 清除
+
+01 17:07:42 0 0 1/31/AP[Console Info]
+Application onCreate
+
+01 17:07:42 0 0 1/31/AP[Console Info]
+TapCare page omit
+
+01 17:07:42 0 0 1/31/AP[Console Info]
+TapCare page onReady, state= idle
+
+01 17:07:42 0 0 1/31/AP[Console Info]
+TapCare page onShow
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+startSession
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+sensor started
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+accel data: x=0.02, y=0.18, z=0.18
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+[CAL] 1/20 mag=0.256
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+accel data: x=0.01, y=0.17, z=0.18
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+[CAL] 2/20 mag=0.245
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+accel data: x=0.08, y=0.17, z=0.19
+
+01 17:07:43 0 0 1/31/AP[Console Info]
+[CAL] 4/20 mag=0.232
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+accel data: x=0.03, y=-0.22, z=0.08
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+[CAL] 5/20 mag=0.540
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+accel data: x=0.00, y=0.29, z=-0.20
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+[CAL] 6/20 mag=0.351
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+accel data: x=0.03, y=-0.06, z=0.22
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+[CAL] 7/20 mag=0.120
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+accel data: x=0.17, y=-0.22, z=-0.12
+
+01 17:07:44 0 0 1/31/AP[Console Info]
+[CAL] 8/20 mag=0.303
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+accel data: x=-0.20, y=0.16, z=-0.12
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+[CAL] 9/20 mag=0.282
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.65, z=-0.14
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+[CAL] 10/20 mag=0.666
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+accel data: x=-0.08, y=-1.11, z=-0.40
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+[CAL] 12/20 mag=1.184
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+accel data: x=-0.20, y=-0.07, z=-0.16
+
+01 17:07:45 0 0 1/31/AP[Console Info]
+[CAL] 13/20 mag=0.270
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+accel data: x=-0.32, y=0.43, z=-0.53
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+[CAL] 14/20 mag=0.753
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+accel data: x=-0.17, y=-0.31, z=-0.29
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+[CAL] 15/20 mag=0.457
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+accel data: x=-0.14, y=1.11, z=-0.10
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+[CAL] 16/20 mag=0.207
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+accel data: x=-0.02, y=-0.58, z=-0.38
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+[CAL] 17/20 mag=0.697
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+accel data: x=-0.03, y=0.64, z=-0.10
+
+01 17:07:46 0 0 1/31/AP[Console Info]
+[CAL] 18/20 mag=0.653
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.21, y=-1.00, z=-0.14
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] 20/20 mag=0.319
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] DONE baseline=0.520
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.28, y=-0.08, z=-0.08
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] 20/20 mag=0.319
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] DONE baseline=0.520
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.28, y=-0.08, z=-0.08
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] 20/20 mag=0.319
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] DONE baseline=0.520
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.28, y=-0.08, z=-0.08
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] 20/20 mag=0.319
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] DONE baseline=0.520
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.28, y=-0.08, z=-0.08
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] 20/20 mag=0.319
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+[CAL] DONE baseline=0.520
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.08, y=-0.26, z=-0.16
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.08, y=-0.26, z=-0.16
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=-0.05, y=-0.09, z=-0.24
+
+01 17:07:47 0 0 1/31/AP[Console Info]
+accel data: x=0.05, y=-0.09, z=-0.18
+
+01 17:07:48 0 0 1/31/AP[Console Info]
+accel data: x=-0.03, y=0.19, z=0.17
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.01, z=0.10
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+accel data: x=-0.72, y=-1.25, z=-0.20
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.935 since=1772356069345
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.935
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+Tap detected! peak=0.93
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+accel data: x=-0.37, y=0.84, z=-0.62
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.584 since=200
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+accel data: x=-0.37, y=0.84, z=-0.62
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.584 since=200
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+accel data: x=-0.57, y=-1.49, z=-1.32
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[HIT] dyn=1.546 since=400
+
+01 17:07:49 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+accel data: x=-0.34, y=0.48, z=-0.29
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.79, z=-0.88
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.894 since=806
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.894
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+accel data: x=-0.57, y=0.51, z=-0.56
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+accel data: x=-0.52, y=1.19, z=-0.73
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.966 since=808
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.966
+
+01 17:07:50 0 0 1/31/AP[Console Info]
+Tap detected! peak=0.97
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+accel data: x=-0.27, y=1.00, z=-0.46
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.610 since=204
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+accel data: x=-0.03, y=-1.10, z=-0.14
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.588 since=203
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:51 0 0 1/31/AP[Console Info]
+accel data: x=-0.07, y=0.60, z=-0.24
+
+01 17:07:52 0 0 1/31/AP[Console Info]
+accel data: x=-0.10, y=-0.58, z=-0.69
+
+01 17:07:52 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.48, z=-0.03
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+accel data: x=-1.52, y=-5.72, z=-0.90
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+[HIT] dyn=5.466 since=1619
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=5.466
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+Tap detected! peak=5.47
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+accel data: x=-0.25, y=-0.13, z=-0.15
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+accel data: x=-0.22, y=-0.17, z=-0.25
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+accel data: x=-0.15, y=-0.28, z=-0.17
+
+01 17:07:53 0 0 1/31/AP[Console Info]
+accel data: x=-0.07, y=0.34, z=-0.01
+
+01 17:07:54 0 0 1/31/AP[Console Info]
+accel data: x=-0.21, y=-0.56, z=-0.21
+
+01 17:07:54 0 0 1/31/AP[Console Info]
+accel data: x=-0.10, y=-0.23, z=-0.06
+
+01 17:07:54 0 0 1/31/AP[Console Info]
+accel data: x=-0.10, y=-0.23, z=-0.06
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.20, z=-0.05
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.20, z=-0.05
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.11, y=0.37, z=0.09
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.29, z=-0.09
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.29, z=-0.09
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.29, z=-0.09
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+[IDLE] dyn=0.282 base=0.52
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.04, y=-0.33, z=-0.23
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.29, z=-0.09
+
+01 17:07:55 0 0 1/31/AP[Console Info]
+accel data: x=-0.13, y=-0.29, z=-0.09
+
+01 17:07:56 0 0 1/31/AP[Console Info]
+accel data: x=-0.23, y=-0.21, z=-0.19
+
+01 17:07:56 0 0 1/31/AP[Console Info]
+accel data: x=-0.19, y=-0.07, z=-0.19
+
+01 17:07:56 0 0 1/31/AP[Console Info]
+accel data: x=-0.36, y=0.35, z=-0.15
+
+01 17:07:56 0 0 1/31/AP[Console Info]
+accel data: x=-0.73, y=-0.06, z=-0.26
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+accel data: x=-0.50, y=0.06, z=-0.37
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+accel data: x=-1.24, y=-1.08, z=-1.03
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+[HIT] dyn=1.423 since=6083
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=1.423
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+Tap detected! peak=1.42
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+accel data: x=-0.00, y=-1.02, z=-0.13
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.505 since=205
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+[TAP] --- debounce skip
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+accel data: x=-0.10, y=-0.23, z=-0.43
+
+01 17:07:57 0 0 1/31/AP[Console Info]
+accel data: x=-0.27, y=-0.34, z=-0.28
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+accel data: x=-0.90, y=-1.19, z=-0.42
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+[HIT] dyn=1.024 since=812
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=1.024
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+Tap detected! peak=1.02
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+accel data: x=-0.14, y=-0.16, z=-0.06
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.25, z=-0.31
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+accel data: x=-0.30, y=-0.64, z=-0.35
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+accel data: x=-0.70, y=-0.94, z=-0.31
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.694 since=810
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.694
+
+01 17:07:58 0 0 1/31/AP[Console Info]
+Tap detected! peak=0.69
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+accel data: x=-0.20, y=0.20, z=-0.09
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+accel data: x=-0.02, y=-0.27, z=-0.29
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+accel data: x=-0.26, y=-0.47, z=-0.34
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+[IDLE] dyn=0.115 base=0.52
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+accel data: x=-0.50, y=-0.64, z=-0.24
+
+01 17:07:59 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.56, z=-0.30
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+accel data: x=0.00, y=-0.26, z=-0.02
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+accel data: x=-0.09, y=-0.81, z=-0.32
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+accel data: x=-0.40, y=1.15, z=0.17
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.704 since=1625
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.704
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+Tap detected! peak=0.70
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+accel data: x=-0.08, y=-0.26, z=-0.13
+
+01 17:08:00 0 0 1/31/AP[Console Info]
+accel data: x=-0.07, y=-0.19, z=-0.45
+
+01 17:08:01 0 0 1/31/AP[Console Info]
+accel data: x=-0.45, y=-0.35, z=-0.38
+
+01 17:08:01 0 0 1/31/AP[Console Info]
+accel data: x=-1.02, y=-1.78, z=-0.46
+
+01 17:08:01 0 0 1/31/AP[Console Info]
+[HIT] dyn=1.584 since=862
+
+01 17:08:01 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=1.584
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+Tap detected! peak=1.47
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+accel data: x=-0.14, y=-0.24, z=-0.12
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+accel data: x=-0.05, y=-0.38, z=-0.36
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+accel data: x=-0.22, y=-0.39, z=-0.26
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+accel data: x=-0.94, y=-0.77, z=-0.29
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+[HIT] dyn=0.728 since=808
+
+01 17:08:02 0 0 1/31/AP[Console Info]
+[TAP] +++ OK dyn=0.728
+
+01 17:08:03 0 0 1/31/AP[Console Info]
+Tap detected! peak=0.73
+
+01 17:08:03 0 0 1/31/AP[Console Info]
+accel data: x=-0.31, y=-0.12, z=-0.16
+
+01 17:08:03 0 0 1/31/AP[Console Info]
+accel data: x=-0.05, y=-0.19, z=-0.07
+
+01 17:08:03 0 0 1/31/AP[Console Info]
+accel data: x=-0.05, y=-0.64, z=-0.32
+
+01 17:08:03 0 0 1/31/AP[Console Info]
+[IDLE] dyn=0.192 base=0.52
+
+01 17:08:04 0 0 1/31/AP[Console Info]
+accel data: x=-0.28, y=-0.67, z=-0.09
+
+01 17:08:04 0 0 1/31/AP[Console Info]
+accel data: x=-0.00, y=-0.06, z=-0.10
+
+01 17:08:04 0 0 1/31/AP[Console Info]
+accel data: x=-0.26, y=-0.08, z=-0.08
+
+01 17:08:04 0 0 1/31/AP[Console Info]
+accel data: x=-0.04, y=0.02, z=-0.23
+
+01 17:08:04 0 0 1/31/AP[Console Info]
+accel data: x=-0.00, y=-0.06, z=-0.10
+
+01 17:08:05 0 0 1/31/AP[Console Info]
+accel data: x=-0.08, y=-0.20, z=-0.15
+
+01 17:08:05 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.24, z=-0.08
+
+01 17:08:05 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.20, z=-0.52
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:06 0 0 1/31/AP[Console Info]
+accel data: x=-0.01, y=-0.21, z=-0.10
+
+01 17:08:

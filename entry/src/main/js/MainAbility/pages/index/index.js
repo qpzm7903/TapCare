@@ -16,15 +16,18 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 降低阈值以适应手腕敲击（单位：g）
+// 简单峰值检测（适配 5Hz 低采样率 + 轻敲场景）
 var TAP = {
-  ACCEL_THRESHOLD: 0.15,    // 0.15g 触发检测
-  PEAK_THRESHOLD: 0.2,      // 0.2g 确认敲击（很轻的敲打也能检测）
-  DEBOUNCE_MS: 250,
-  MIN_DURATION: 30,
-  MAX_DURATION: 400,
-  FORCE_LIGHT_MAX: 0.4,     // 0.4g 以下为轻敲
-  FORCE_MEDIUM_MAX: 0.6     // 0.6g 以下为中敲
+  TAP_THRESHOLD: 0.35,      // 0.35g 检测轻敲（静止噪声 0.1~0.3，轻敲 0.5+）
+  DEBOUNCE_MS: 300,         // 300ms 防抖，支持约 3 次/秒的敲打节奏
+  FORCE_LIGHT_MAX: 0.8,     // 0.8g 以下为轻敲
+  FORCE_MEDIUM_MAX: 2.0     // 2.0g 以下为中敲，以上为重敲
+};
+
+// Baseline 校准参数
+var CAL = {
+  SAMPLE_COUNT: 10,         // 采集 10 个样本（约 2 秒）
+  USE_LOWEST: 6             // 取最小的 6 个计算均值（排除运动干扰）
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -56,11 +59,6 @@ export default {
     this._hapticEnabled = true;
     this._baseline = 1.0;  // 初始值，启动后会自动校准
 
-    this._tapState = 'idle';
-    this._tapStartTime = 0;
-    this._peakAccel = 0;
-    this._cooldownEndTime = 0;
-
     this._sessionStartTime = 0;
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
@@ -74,6 +72,7 @@ export default {
     this._baselineCalibrated = false;
 
     this._durationTimer = null;
+    this._debugLogCount = 0;
 
     this._loadSettings();
   },
@@ -125,12 +124,9 @@ export default {
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
-    this._resetTapDetector();
-    this._resetBaseline();  // 重置 baseline 校准
+    this._resetBaseline();
+    this._debugLogCount = 0;
 
-    this._setState('counting');
-    this._startSensor();
-    this._startDurationTimer();
     this._setState('counting');
     this._startSensor();
     this._startDurationTimer();
@@ -185,59 +181,55 @@ export default {
   _processSensorData(x, y, z) {
     var now = Date.now();
     var magnitude = Math.sqrt(x * x + y * y + z * z);
-    
-    // Baseline 校准（前 20 个样本）
+
+    // Baseline 校准：采集样本，取最小的几个均值（排除运动干扰）
     if (!this._baselineCalibrated) {
       this._baselineSamples.push(magnitude);
-      if (this._baselineSamples.length >= 20) {
-        // 计算平均值作为 baseline
-        var sum = 0;
+      console.info('[CAL] ' + this._baselineSamples.length + '/' + CAL.SAMPLE_COUNT + ' mag=' + magnitude.toFixed(3));
+      if (this._baselineSamples.length >= CAL.SAMPLE_COUNT) {
+        // 手写冒泡排序（Lite Wearable 不支持 Array.sort）
+        var arr = this._baselineSamples;
         var i;
-        for (i = 0; i < 20; i++) {
-          sum += this._baselineSamples[i];
+        var j;
+        var tmp;
+        for (i = 0; i < arr.length - 1; i++) {
+          for (j = 0; j < arr.length - 1 - i; j++) {
+            if (arr[j] > arr[j + 1]) {
+              tmp = arr[j];
+              arr[j] = arr[j + 1];
+              arr[j + 1] = tmp;
+            }
+          }
         }
-        this._baseline = sum / 20;
+        // 取最小的 CAL.USE_LOWEST 个样本的均值
+        var sum = 0;
+        for (i = 0; i < CAL.USE_LOWEST; i++) {
+          sum += arr[i];
+        }
+        this._baseline = sum / CAL.USE_LOWEST;
         this._baselineCalibrated = true;
-        console.info('Baseline calibrated: ' + this._baseline.toFixed(3));
+        console.info('[CAL] DONE baseline=' + this._baseline.toFixed(3) + ' (sorted: ' + arr[0].toFixed(2) + '~' + arr[arr.length - 1].toFixed(2) + ')');
       }
-      return;  // 校准期间不检测敲打
+      return;
     }
-    
-    var dynamicAccel = Math.abs(magnitude - this._baseline);
-    
-    // 调试日志：打印实际加速度值
-    console.info('accel: mag=' + magnitude.toFixed(2) + ', dyn=' + dynamicAccel.toFixed(2));
-    
-    var dynamicAccel = Math.abs(magnitude - this._baseline);
-    
-    // 调试日志：打印实际加速度值
-    console.info('accel: mag=' + magnitude.toFixed(2) + ', dyn=' + dynamicAccel.toFixed(2));
 
-    if (this._tapState === 'idle') {
-      if (dynamicAccel >= TAP.ACCEL_THRESHOLD) {
-        this._tapState = 'potential_tap';
-        this._tapStartTime = now;
-        this._peakAccel = dynamicAccel;
-      }
-    } else if (this._tapState === 'potential_tap') {
-      if (dynamicAccel > this._peakAccel) {
-        this._peakAccel = dynamicAccel;
-      }
-      var duration = now - this._tapStartTime;
-      if (dynamicAccel < TAP.ACCEL_THRESHOLD || duration > TAP.MAX_DURATION) {
-        if (duration >= TAP.MIN_DURATION &&
-            duration <= TAP.MAX_DURATION &&
-            this._peakAccel >= TAP.PEAK_THRESHOLD) {
-          this._onTapDetected(this._peakAccel, now);
-          this._tapState = 'cooldown';
-          this._cooldownEndTime = now + TAP.DEBOUNCE_MS;
-        } else {
-          this._tapState = 'idle';
-        }
-      }
-    } else if (this._tapState === 'cooldown') {
-      if (now >= this._cooldownEndTime) {
-        this._tapState = 'idle';
+    var dynamicAccel = Math.abs(magnitude - this._baseline);
+
+    // 每 20 帧输出一次静态数据
+    this._debugLogCount += 1;
+    if (this._debugLogCount % 20 === 0) {
+      console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' base=' + this._baseline.toFixed(2));
+    }
+
+    // 简单峰值检测：dyn 超过阈值 + debounce 防抖
+    if (dynamicAccel >= TAP.TAP_THRESHOLD) {
+      var sinceLastTap = now - this._lastTapTime;
+      console.info('[HIT] dyn=' + dynamicAccel.toFixed(3) + ' since=' + sinceLastTap);
+      if (sinceLastTap >= TAP.DEBOUNCE_MS) {
+        console.info('[TAP] +++ OK dyn=' + dynamicAccel.toFixed(3));
+        this._onTapDetected(dynamicAccel, now);
+      } else {
+        console.info('[TAP] --- debounce skip');
       }
     }
   },
@@ -257,7 +249,7 @@ export default {
       this._forceCounts.strong += 1;
     }
 
-    var forceNorm = ((peakAccel - TAP.PEAK_THRESHOLD) / 32.0) * 100;
+    var forceNorm = ((peakAccel - TAP.TAP_THRESHOLD) / 5.0) * 100;
     this._forceSum += Math.max(0, Math.min(100, Math.round(forceNorm)));
 
     if (this._lastTapTime > 0) {
@@ -306,13 +298,6 @@ export default {
     return '不稳';
   },
 
-  _resetTapDetector() {
-    this._tapState = 'idle';
-    this._tapStartTime = 0;
-    this._peakAccel = 0;
-    this._cooldownEndTime = 0;
-  },
-
   _resetBaseline() {
     this._baselineSamples = [];
     this._baselineCalibrated = false;
@@ -329,7 +314,6 @@ export default {
       sensor.subscribeAccelerometer({
         interval: 'normal',
         success: function(data) {
-          console.info('accel data: x=' + data.x.toFixed(2) + ', y=' + data.y.toFixed(2) + ', z=' + data.z.toFixed(2));
           if (self.state === 'counting') {
             self._processSensorData(data.x, data.y, data.z);
           }
