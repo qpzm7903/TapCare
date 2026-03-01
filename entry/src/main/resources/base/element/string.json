@@ -2,15 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "敲敲计 - 中医经络敲打练习助手"
+      "value": "我敲 - 中医经络敲打练习助手"
     },
     {
       "name": "MainAbility_desc",
-      "value": "敲敲计主界面"
+      "value": "我敲主界面"
     },
     {
       "name": "MainAbility_label",
-      "value": "敲敲计"
+      "value": "我敲"
     }
   ]
 }

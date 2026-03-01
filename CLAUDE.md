@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**敲敲计 (TapCare)** — 运行在华为 GT4/GT6 手表上的中医经络敲打健康练习应用。通过加速度+陀螺仪传感器实现敲打动作检测、计数、力度识别和练习记录。
+**我敲 (TapCare)** — 运行在华为 GT4/GT6 手表上的中医经络敲打健康练习应用。通过加速度+陀螺仪传感器实现敲打动作检测、计数、力度识别和练习记录。
 
 - **平台**: HarmonyOS Lite Wearable (GT4/GT6, HarmonyOS 5.0+)
 - **开发模型**: FA 模型（不是 Stage 模型）
