@@ -1,8 +1,12 @@
 # HarmonyOS Lite Wearable 开发指南
 
-本项目是运行在 **HUAWEI Watch GT4 / GT6** 上的鸿蒙轻量级穿戴应用（Lite Wearable）。
-开发语言：**JavaScript**，配置模型：**FA 模型**，UI 框架：**ArkUI Lite（类 Web）**。
+**敲敲计 (TapCare)** — 运行在华为 GT4/GT6 手表上的中医经络敲打健康练习应用。通过加速度 + 陀螺仪传感器实现敲打动作检测、计数、力度识别和练习记录。
 
+- **平台**: HarmonyOS Lite Wearable (GT4/GT6, HarmonyOS 5.0+)
+- **开发模型**: FA 模型（不是 Stage 模型）
+- **语言**: JavaScript（不是 ArkTS）
+- **UI 框架**: ArkUI Lite（类 Web 三件套：HML + CSS + JS）
+- **屏幕尺寸**: 466px 圆形表盘
 ---
 
 ## 项目结构
@@ -33,7 +37,14 @@
 > **若目录中存在 `AppScope/` 或 `.ets` 文件，说明这是 Stage 模型项目，无法在手表上运行，不要修改，直接告知用户需要重建项目。**
 
 ---
+### Lite Wearable config.json 限制（踩坑记录）
 
+- `config.json` **顶层只允许** `app`、`deviceConfig`、`module` 三个 key，写其他字段会构建报错
+- `module` 内**不支持** `reqPermissions` 字段，安装到手表时会报 `module.abilities.permissions 字段不合法`
+- Lite Wearable 上 `@system.sensor` 的加速度传感器（`subscribeAccelerometer`）**无需权限声明**，直接调用即可
+- **不要**在 config.json 中添加任何权限相关配置（`reqPermissions`、`defPermissions` 等），Lite Wearable 不支持
+
+---
 ## 核心约束（必须遵守）
 
 ### FA 模型约束
@@ -49,16 +60,15 @@
 `targetSdkVersion` 和 `compatibleSdkVersion` 必须使用以下范围，**不能更高**：
 
 ```json5
-"targetSdkVersion": "3.0.0(7)",
-"compatibleSdkVersion": "2.2.0(6)"
+"targetSdkVersion": "6.0.2(22)",
+"compatibleSdkVersion": "4.0.0(10)"
 ```
 
-GT4/GT6 手表固件对 Lite Wearable 支持的 API Level 上限为 7，使用更高版本（如 `5.1.0(18)`）会导致安装失败。
+GT4/GT6 手表固件对 Lite Wearable 支持的 API Level 上限为此范围，使用更高版本会导致安装失败。
 
 ### bundleName 规则
 
-- 不能使用 `com.huawei` 前缀（华为保留命名空间）
-- 必须与在 AGC 申请的 App ID 包名完全一致
+- 当前 `config.json` 中的 `com.huawei.healthcounter` 不用改
 
 ---
 
@@ -200,8 +210,7 @@ Lite Wearable **不支持自动签名**，必须手动配置：
 ## 禁止事项
 
 - ❌ 不要创建或修改 `module.json5`（Stage 模型文件，Lite Wearable 不用）
-- ❌ 不要在 `bundleName` 中使用 `com.huawei` 前缀
-- ❌ 不要将 `targetSdkVersion` 设为高于 `3.0.0(7)`
+- ❌ 不要将 `targetSdkVersion` 设为高于 `6.0.2(22)`
 - ❌ 不要编写 `fetch`、`axios`、`XMLHttpRequest` 等网络请求代码
 - ❌ 不要使用 `.ets` 文件或 ArkTS 语法（Lite Wearable 只支持 JS）
 - ❌ 不要删除或重命名 `config.json`（唯一配置文件）
