@@ -16,15 +16,15 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 降低阈值以适应手腕敲击
+// 降低阈值以适应手腕敲击（单位：g）
 var TAP = {
-  ACCEL_THRESHOLD: 5.0,
-  PEAK_THRESHOLD: 8.0,
+  ACCEL_THRESHOLD: 0.3,     // 0.3g 触发检测
+  PEAK_THRESHOLD: 0.5,       // 0.5g 确认敲击
   DEBOUNCE_MS: 250,
   MIN_DURATION: 30,
   MAX_DURATION: 400,
-  FORCE_LIGHT_MAX: 12.0,
-  FORCE_MEDIUM_MAX: 18.0
+  FORCE_LIGHT_MAX: 0.8,      // 0.8g 以下为轻敲
+  FORCE_MEDIUM_MAX: 1.2      // 1.2g 以下为中敲
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -54,7 +54,7 @@ export default {
     this._partIndex = 0;
     this._sensorActive = false;
     this._hapticEnabled = true;
-    this._baseline = 9.8;
+    this._baseline = 1.0;  // 初始值，启动后会自动校准
 
     this._tapState = 'idle';
     this._tapStartTime = 0;
@@ -68,6 +68,10 @@ export default {
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
+
+    // Baseline 校准
+    this._baselineSamples = [];
+    this._baselineCalibrated = false;
 
     this._durationTimer = null;
 
@@ -122,7 +126,11 @@ export default {
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
     this._resetTapDetector();
+    this._resetBaseline();  // 重置 baseline 校准
 
+    this._setState('counting');
+    this._startSensor();
+    this._startDurationTimer();
     this._setState('counting');
     this._startSensor();
     this._startDurationTimer();
@@ -177,6 +185,29 @@ export default {
   _processSensorData(x, y, z) {
     var now = Date.now();
     var magnitude = Math.sqrt(x * x + y * y + z * z);
+    
+    // Baseline 校准（前 20 个样本）
+    if (!this._baselineCalibrated) {
+      this._baselineSamples.push(magnitude);
+      if (this._baselineSamples.length >= 20) {
+        // 计算平均值作为 baseline
+        var sum = 0;
+        var i;
+        for (i = 0; i < 20; i++) {
+          sum += this._baselineSamples[i];
+        }
+        this._baseline = sum / 20;
+        this._baselineCalibrated = true;
+        console.info('Baseline calibrated: ' + this._baseline.toFixed(3));
+      }
+      return;  // 校准期间不检测敲打
+    }
+    
+    var dynamicAccel = Math.abs(magnitude - this._baseline);
+    
+    // 调试日志：打印实际加速度值
+    console.info('accel: mag=' + magnitude.toFixed(2) + ', dyn=' + dynamicAccel.toFixed(2));
+    
     var dynamicAccel = Math.abs(magnitude - this._baseline);
     
     // 调试日志：打印实际加速度值
@@ -280,6 +311,11 @@ export default {
     this._tapStartTime = 0;
     this._peakAccel = 0;
     this._cooldownEndTime = 0;
+  },
+
+  _resetBaseline() {
+    this._baselineSamples = [];
+    this._baselineCalibrated = false;
   },
 
   // ==================== 传感器 ====================
