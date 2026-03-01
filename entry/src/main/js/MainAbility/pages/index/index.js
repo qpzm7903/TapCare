@@ -16,10 +16,10 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 简单峰值检测（适配 5Hz 低采样率 + 轻敲场景）
+// 上升沿检测（适配 ui 模式 ~17Hz 采样率）
 var TAP = {
   TAP_THRESHOLD: 0.35,      // 0.35g 检测轻敲（静止噪声 0.1~0.3，轻敲 0.5+）
-  DEBOUNCE_MS: 300,         // 300ms 防抖，支持约 3 次/秒的敲打节奏
+  MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms，防止极端情况下的抖动
   FORCE_LIGHT_MAX: 0.8,     // 0.8g 以下为轻敲
   FORCE_MEDIUM_MAX: 2.0     // 2.0g 以下为中敲，以上为重敲
 };
@@ -63,6 +63,8 @@ export default {
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
     this._lastTapTime = 0;
+    this._tapFired = false;  // 上升沿检测状态
+    this._tapPeak = 0;       // FIRED 期间跟踪峰值
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
@@ -121,6 +123,8 @@ export default {
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
     this._lastTapTime = 0;
+    this._tapFired = false;
+    this._tapPeak = 0;
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
@@ -221,15 +225,30 @@ export default {
       console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' base=' + this._baseline.toFixed(2));
     }
 
-    // 简单峰值检测：dyn 超过阈值 + debounce 防抖
+    // 上升沿检测：信号必须回落到阈值以下才能触发下一次
     if (dynamicAccel >= TAP.TAP_THRESHOLD) {
-      var sinceLastTap = now - this._lastTapTime;
-      console.info('[HIT] dyn=' + dynamicAccel.toFixed(3) + ' since=' + sinceLastTap);
-      if (sinceLastTap >= TAP.DEBOUNCE_MS) {
-        console.info('[TAP] +++ OK dyn=' + dynamicAccel.toFixed(3));
-        this._onTapDetected(dynamicAccel, now);
+      if (!this._tapFired) {
+        // 上升沿：首次越过阈值，触发计数
+        var sinceLastTap = now - this._lastTapTime;
+        if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
+          this._tapFired = true;
+          this._tapPeak = dynamicAccel;
+          console.info('[TAP] +++ FIRE dyn=' + dynamicAccel.toFixed(3) + ' since=' + sinceLastTap);
+          this._onTapDetected(dynamicAccel, now);
+        } else {
+          console.info('[TAP] --- min-debounce skip (' + sinceLastTap + 'ms)');
+        }
       } else {
-        console.info('[TAP] --- debounce skip');
+        // 已触发，跟踪峰值（仅日志，不重复计数）
+        if (dynamicAccel > this._tapPeak) {
+          this._tapPeak = dynamicAccel;
+        }
+      }
+    } else {
+      // 信号回落到阈值以下，重置触发状态
+      if (this._tapFired) {
+        console.info('[TAP] --- reset (peak was ' + this._tapPeak.toFixed(3) + ')');
+        this._tapFired = false;
       }
     }
   },
