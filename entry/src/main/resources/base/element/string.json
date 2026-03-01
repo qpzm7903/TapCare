@@ -2,15 +2,15 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "module description"
+      "value": "敲敲计 - 中医经络敲打练习助手"
     },
     {
       "name": "MainAbility_desc",
-      "value": "description"
+      "value": "敲敲计主界面"
     },
     {
       "name": "MainAbility_label",
-      "value": "label"
+      "value": "敲敲计"
     }
   ]
 }

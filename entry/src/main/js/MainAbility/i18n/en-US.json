@@ -1,6 +1,7 @@
 {
   "strings": {
     "hello": "Hello",
-    "world": "World"
+    "world": "World",
+    "appName": "TapCare"
   }
 }

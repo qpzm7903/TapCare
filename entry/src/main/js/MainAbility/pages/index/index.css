@@ -1,11 +1,142 @@
 .container {
-  width: 100%;
-  height: 100%;
-  justify-content: center;
+  width: 466px;
+  height: 466px;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  background-color: #1A1A1A;
 }
-.title {
+
+.view {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 380px;
+  height: 466px;
+}
+
+/* ========== 文本 ========== */
+
+.part-selector {
+  width: 380px;
+  height: 40px;
+  font-size: 20px;
+  color: #4ECDC4;
+  margin-bottom: 12px;
+}
+
+.part-label {
+  width: 380px;
+  height: 30px;
+  font-size: 18px;
+  color: #4ECDC4;
+  margin-bottom: 4px;
+}
+
+.count-big {
+  width: 380px;
+  height: 80px;
+  font-size: 64px;
+  color: #FFFFFF;
+}
+
+.sub-text {
+  width: 380px;
+  height: 30px;
+  font-size: 20px;
+  color: #AAAAAA;
+  margin-bottom: 10px;
+}
+
+.duration {
+  width: 380px;
+  height: 26px;
+  font-size: 16px;
+  color: #FFFFFF;
+  margin-bottom: 6px;
+}
+
+.info-line {
+  width: 380px;
+  height: 24px;
+  font-size: 14px;
+  color: #AAAAAA;
+}
+
+.paused-label {
+  width: 380px;
+  height: 36px;
+  font-size: 22px;
+  color: #FFD93D;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+
+.complete-title {
+  width: 380px;
+  height: 36px;
+  font-size: 24px;
+  color: #2ECC71;
+  margin-bottom: 8px;
+}
+
+.stat-text {
+  width: 380px;
+  height: 24px;
+  font-size: 14px;
+  color: #AAAAAA;
+  margin-bottom: 4px;
+}
+
+/* ========== 进度条 ========== */
+
+.progress {
+  width: 300px;
+  height: 8px;
+  color: #FF6B6B;
+  margin-bottom: 6px;
+}
+
+/* ========== 按钮 ========== */
+
+.btn-start {
   width: 200px;
-  font-size: 30px;
-  text-align: center;
+  height: 50px;
+  background-color: #FF6B6B;
+  color: #FFFFFF;
+  font-size: 20px;
+  margin-top: 10px;
+}
+
+.btn-row {
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.btn-primary {
+  width: 130px;
+  height: 46px;
+  background-color: #FF6B6B;
+  color: #FFFFFF;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.btn-secondary {
+  width: 130px;
+  height: 46px;
+  background-color: #2D2D2D;
+  color: #FFFFFF;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.btn-danger {
+  width: 130px;
+  height: 46px;
+  background-color: #E74C3C;
+  color: #FFFFFF;
+  font-size: 16px;
 }
