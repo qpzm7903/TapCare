@@ -19,7 +19,7 @@ var PARTS = [
 // 敲打检测参数（5Hz 采样率优化）
 var TAP = {
   TAP_THRESHOLD: 0.18,      // 绝对阈值：0.18g（降低以捕获更多轻敲）
-  DELTA_THRESHOLD: 0.12,    // 帧间差值阈值：0.12g（捕获敲打边缘）
+  DELTA_THRESHOLD: 0.15,    // 帧间差值阈值：0.15g（捕获敲打边缘，留噪声余量）
   MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms
   FORCE_LIGHT_MAX: 0.4,     // 0.4g 以下为轻敲
   FORCE_MEDIUM_MAX: 1.0     // 1.0g 以下为中敲，以上为重敲
@@ -215,6 +215,8 @@ export default {
         }
         this._baseline = sum / CAL.USE_LOWEST;
         this._baselineCalibrated = true;
+        this._prevMagnitude = magnitude;  // 用最后一帧初始化，避免首帧 delta 异常
+        this._lastTapTime = now;          // 避免首帧 since 为天文数字导致误触发
         console.info('[CAL] DONE baseline=' + this._baseline.toFixed(3) + ' (sorted: ' + arr[0].toFixed(2) + '~' + arr[arr.length - 1].toFixed(2) + ')');
       }
       return;
