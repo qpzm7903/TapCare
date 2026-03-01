@@ -18,10 +18,10 @@ var PARTS = [
 
 // 上升沿检测（适配 ui 模式 ~17Hz 采样率）
 var TAP = {
-  TAP_THRESHOLD: 0.35,      // 0.35g 检测轻敲（静止噪声 0.1~0.3，轻敲 0.5+）
+  TAP_THRESHOLD: 0.28,      // 0.28g 检测轻敲（上升沿保护下可降低阈值）
   MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms，防止极端情况下的抖动
-  FORCE_LIGHT_MAX: 0.8,     // 0.8g 以下为轻敲
-  FORCE_MEDIUM_MAX: 2.0     // 2.0g 以下为中敲，以上为重敲
+  FORCE_LIGHT_MAX: 0.5,     // 0.5g 以下为轻敲
+  FORCE_MEDIUM_MAX: 1.0     // 1.0g 以下为中敲，以上为重敲
 };
 
 // Baseline 校准参数
