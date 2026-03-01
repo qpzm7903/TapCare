@@ -40,9 +40,22 @@
 ### Lite Wearable config.json 限制（踩坑记录）
 
 - `config.json` **顶层只允许** `app`、`deviceConfig`、`module` 三个 key，写其他字段会构建报错
-- `module` 内**不支持** `reqPermissions` 字段，安装到手表时会报 `module.abilities.permissions 字段不合法`
-- Lite Wearable 上 `@system.sensor` 的加速度传感器（`subscribeAccelerometer`）**无需权限声明**，直接调用即可
-- **不要**在 config.json 中添加任何权限相关配置（`reqPermissions`、`defPermissions` 等），Lite Wearable 不支持
+- `module` 内添加 `reqPermissions` 必须使用完整格式（包含 `reason` 和 `usedScene`），否则会报 `module.abilities.permissions 字段不合法`
+- 传感器权限声明格式（参考示例）：
+  ```json
+  "reqPermissions": [
+    {
+      "name": "ohos.permission.ACCELEROMETER",
+      "reason": "Access accelerometer sensor data",
+      "usedScene": {
+        "ability": ["MainAbility"],
+        "when": "inuse"
+      }
+    }
+  ]
+  ```
+- `reqPermissions` 必须放在 `module` 内、`js` 数组之前
+- Lite Wearable 上 `@system.sensor` 的加速度传感器需要声明权限才能正常使用
 
 ---
 ## 核心约束（必须遵守）

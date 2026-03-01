@@ -33,6 +33,28 @@
         "type": "page"
       }
     ],
+    "reqPermissions": [
+      {
+        "name": "ohos.permission.ACCELEROMETER",
+        "reason": "Access accelerometer sensor data for tap detection",
+        "usedScene": {
+          "ability": [
+            "MainAbility"
+          ],
+          "when": "inuse"
+        }
+      },
+      {
+        "name": "ohos.permission.VIBRATE",
+        "reason": "Provide haptic feedback for tap detection",
+        "usedScene": {
+          "ability": [
+            "MainAbility"
+          ],
+          "when": "inuse"
+        }
+      }
+    ],
     "js": [
       {
         "pages": [

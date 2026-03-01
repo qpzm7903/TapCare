@@ -16,14 +16,15 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
+// 降低阈值以适应手腕敲击
 var TAP = {
-  ACCEL_THRESHOLD: 15.0,
-  PEAK_THRESHOLD: 18.0,
-  DEBOUNCE_MS: 200,
-  MIN_DURATION: 50,
-  MAX_DURATION: 300,
-  FORCE_LIGHT_MAX: 25.0,
-  FORCE_MEDIUM_MAX: 35.0
+  ACCEL_THRESHOLD: 5.0,
+  PEAK_THRESHOLD: 8.0,
+  DEBOUNCE_MS: 250,
+  MIN_DURATION: 30,
+  MAX_DURATION: 400,
+  FORCE_LIGHT_MAX: 12.0,
+  FORCE_MEDIUM_MAX: 18.0
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -177,6 +178,9 @@ export default {
     var now = Date.now();
     var magnitude = Math.sqrt(x * x + y * y + z * z);
     var dynamicAccel = Math.abs(magnitude - this._baseline);
+    
+    // 调试日志：打印实际加速度值
+    console.info('accel: mag=' + magnitude.toFixed(2) + ', dyn=' + dynamicAccel.toFixed(2));
 
     if (this._tapState === 'idle') {
       if (dynamicAccel >= TAP.ACCEL_THRESHOLD) {
@@ -208,6 +212,7 @@ export default {
   },
 
   _onTapDetected(peakAccel, timestamp) {
+    console.info('Tap detected! peak=' + peakAccel.toFixed(2));
     this.count += 1;
 
     if (peakAccel < TAP.FORCE_LIGHT_MAX) {
@@ -286,23 +291,26 @@ export default {
     var self = this;
     try {
       sensor.subscribeAccelerometer({
-        interval: 'game',
+        interval: 'normal',
         success: function(data) {
+          console.info('accel data: x=' + data.x.toFixed(2) + ', y=' + data.y.toFixed(2) + ', z=' + data.z.toFixed(2));
           if (self.state === 'counting') {
             self._processSensorData(data.x, data.y, data.z);
           }
         },
         fail: function(data, code) {
-          console.error('sensor fail: ' + code);
+          console.error('sensor fail: ' + code + ', data: ' + JSON.stringify(data));
+          self._sensorActive = false;
         }
       });
       this._sensorActive = true;
       console.info('sensor started');
     } catch (e) {
       console.error('sensor error: ' + e);
+      this._sensorActive = false;
     }
-  },
-
+  }
+,
   _stopSensor() {
     if (!this._sensorActive) {
       return;
