@@ -18,13 +18,13 @@ var PARTS = [
 
 // 降低阈值以适应手腕敲击（单位：g）
 var TAP = {
-  ACCEL_THRESHOLD: 0.3,     // 0.3g 触发检测
-  PEAK_THRESHOLD: 0.5,       // 0.5g 确认敲击
+  ACCEL_THRESHOLD: 0.15,    // 0.15g 触发检测
+  PEAK_THRESHOLD: 0.2,      // 0.2g 确认敲击（很轻的敲打也能检测）
   DEBOUNCE_MS: 250,
   MIN_DURATION: 30,
   MAX_DURATION: 400,
-  FORCE_LIGHT_MAX: 0.8,      // 0.8g 以下为轻敲
-  FORCE_MEDIUM_MAX: 1.2      // 1.2g 以下为中敲
+  FORCE_LIGHT_MAX: 0.4,     // 0.4g 以下为轻敲
+  FORCE_MEDIUM_MAX: 0.6     // 0.6g 以下为中敲
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
