@@ -16,11 +16,12 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 上升沿检测（适配 ui 模式 ~17Hz 采样率）
+// 敲打检测参数（5Hz 采样率优化）
 var TAP = {
-  TAP_THRESHOLD: 0.28,      // 0.28g 检测轻敲（上升沿保护下可降低阈值）
-  MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms，防止极端情况下的抖动
-  FORCE_LIGHT_MAX: 0.5,     // 0.5g 以下为轻敲
+  TAP_THRESHOLD: 0.18,      // 绝对阈值：0.18g（降低以捕获更多轻敲）
+  DELTA_THRESHOLD: 0.12,    // 帧间差值阈值：0.12g（捕获敲打边缘）
+  MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms
+  FORCE_LIGHT_MAX: 0.4,     // 0.4g 以下为轻敲
   FORCE_MEDIUM_MAX: 1.0     // 1.0g 以下为中敲，以上为重敲
 };
 
@@ -65,6 +66,7 @@ export default {
     this._lastTapTime = 0;
     this._tapFired = false;  // 上升沿检测状态
     this._tapPeak = 0;       // FIRED 期间跟踪峰值
+    this._prevMagnitude = -1; // 上一帧 magnitude，用于帧间差值检测
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
@@ -125,6 +127,7 @@ export default {
     this._lastTapTime = 0;
     this._tapFired = false;
     this._tapPeak = 0;
+    this._prevMagnitude = -1;
     this._tapIntervals = [];
     this._forceSum = 0;
     this._forceCounts = { light: 0, medium: 0, strong: 0 };
@@ -219,33 +222,44 @@ export default {
 
     var dynamicAccel = Math.abs(magnitude - this._baseline);
 
+    // 帧间差值：当前帧与上一帧 magnitude 的变化量
+    var delta = 0;
+    if (this._prevMagnitude >= 0) {
+      delta = Math.abs(magnitude - this._prevMagnitude);
+    }
+    this._prevMagnitude = magnitude;
+
+    // 综合信号：取绝对偏移和帧间差值中较大的信号
+    // 绝对偏移捕获采到峰值的情况，帧间差值捕获采到边缘的情况
+    var dynHit = dynamicAccel >= TAP.TAP_THRESHOLD;
+    var deltaHit = delta >= TAP.DELTA_THRESHOLD;
+    var signal = Math.max(dynamicAccel, delta);
+
     // 每 20 帧输出一次静态数据
     this._debugLogCount += 1;
     if (this._debugLogCount % 20 === 0) {
-      console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' base=' + this._baseline.toFixed(2));
+      console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' base=' + this._baseline.toFixed(2));
     }
 
-    // 上升沿检测：信号必须回落到阈值以下才能触发下一次
-    if (dynamicAccel >= TAP.TAP_THRESHOLD) {
+    // 上升沿检测：信号必须回落才能触发下一次
+    if (dynHit || deltaHit) {
       if (!this._tapFired) {
-        // 上升沿：首次越过阈值，触发计数
         var sinceLastTap = now - this._lastTapTime;
         if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
           this._tapFired = true;
-          this._tapPeak = dynamicAccel;
-          console.info('[TAP] +++ FIRE dyn=' + dynamicAccel.toFixed(3) + ' since=' + sinceLastTap);
-          this._onTapDetected(dynamicAccel, now);
+          this._tapPeak = signal;
+          var reason = dynHit && deltaHit ? 'BOTH' : (dynHit ? 'DYN' : 'DELTA');
+          console.info('[TAP] +++ FIRE ' + reason + ' dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' since=' + sinceLastTap);
+          this._onTapDetected(signal, now);
         } else {
-          console.info('[TAP] --- min-debounce skip (' + sinceLastTap + 'ms)');
+          console.info('[TAP] --- debounce skip (' + sinceLastTap + 'ms)');
         }
       } else {
-        // 已触发，跟踪峰值（仅日志，不重复计数）
-        if (dynamicAccel > this._tapPeak) {
-          this._tapPeak = dynamicAccel;
+        if (signal > this._tapPeak) {
+          this._tapPeak = signal;
         }
       }
     } else {
-      // 信号回落到阈值以下，重置触发状态
       if (this._tapFired) {
         console.info('[TAP] --- reset (peak was ' + this._tapPeak.toFixed(3) + ')');
         this._tapFired = false;

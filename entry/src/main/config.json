@@ -53,6 +53,16 @@
           ],
           "when": "inuse"
         }
+      },
+      {
+        "name": "ohos.permission.GYROSCOPE",
+        "reason": "Access gyroscope sensor data for tap detection",
+        "usedScene": {
+          "ability": [
+            "MainAbility"
+          ],
+          "when": "inuse"
+        }
       }
     ],
     "js": [

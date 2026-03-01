@@ -38,6 +38,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Lite Wearable 上 `@system.sensor` 的加速度传感器（`subscribeAccelerometer`）**无需权限声明**，直接调用即可
 - **不要**在 config.json 中添加任何权限相关配置（`reqPermissions`、`defPermissions` 等），Lite Wearable 不支持
 
+### 传感器采样率限制（GT6 真机验证）
+
+- `subscribeAccelerometer` 的 `interval` 参数只有 `'normal'` 能工作，实际采样率约 **5Hz（每 200ms 一帧）**
+- `'game'` 和 `'ui'` 模式均**静默失败**：subscribe 不报错，但 success 回调永远不触发（0 帧）
+- **不要尝试切换 interval 模式来提升采样率**，5Hz 是硬限制，只能在算法层面优化
+- 传感器返回**去重力后的线性加速度（单位 g）**，静止时 magnitude ≈ 0.25g
+
 ### JS 运行时限制
 
 Lite Wearable 运行裁剪版 JS 引擎：
