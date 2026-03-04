@@ -4,115 +4,141 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #1A1A1A;
+  background-color: #000000;
 }
 
 .view {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 380px;
+  width: 466px;
   height: 466px;
+}
+
+/* ========== 布局辅助 ========== */
+
+.spacer {
+  width: 466px;
+  height: 50px;
+}
+
+.spacer-small {
+  width: 466px;
+  height: 20px;
+}
+
+.btn-row-bottom {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 466px;
+  height: 60px;
 }
 
 /* ========== 文本 ========== */
 
-.part-selector {
-  width: 380px;
-  height: 40px;
-  font-size: 20px;
-  color: #4ECDC4;
-  margin-bottom: 12px;
-}
 
-.part-label {
-  width: 380px;
-  height: 30px;
-  font-size: 18px;
-  color: #4ECDC4;
-  margin-bottom: 4px;
-}
 
-.count-big {
-  width: 380px;
-  height: 110px;
-  font-size: 100px;
+.count-big-active {
+  font-size: 110px;
   color: #FFFFFF;
+  font-weight: bold;
+  height: 120px;
+  text-align: center;
+  width: 466px;
 }
 
-.duration-big {
-  width: 380px;
-  height: 40px;
-  font-size: 32px;
+.count-big-paused {
+  font-size: 110px;
+  color: #888888;
+  font-weight: bold;
+  height: 120px;
+  text-align: center;
+  width: 466px;
+}
+
+.count-big-success {
+  font-size: 90px;
   color: #FFFFFF;
-  margin-top: 8px;
+  font-weight: bold;
+  height: 100px;
+  text-align: center;
+  width: 466px;
+}
+
+.duration-medium {
+  font-size: 28px;
+  color: #AAAAAA;
+  height: 36px;
+  text-align: center;
+  width: 466px;
 }
 
 .paused-label {
-  width: 380px;
-  height: 36px;
-  font-size: 22px;
+  font-size: 26px;
   color: #FFD93D;
-  margin-top: 8px;
-  margin-bottom: 16px;
+  height: 36px;
+  text-align: center;
+  width: 466px;
 }
 
 .complete-title {
-  width: 380px;
-  height: 36px;
-  font-size: 24px;
+  font-size: 28px;
   color: #2ECC71;
-  margin-bottom: 8px;
+  height: 40px;
+  text-align: center;
+  width: 466px;
 }
 
 .stat-text {
-  width: 380px;
-  height: 24px;
-  font-size: 14px;
+  font-size: 18px;
   color: #AAAAAA;
-  margin-bottom: 4px;
+  height: 28px;
+  text-align: center;
+  width: 466px;
 }
 
 /* ========== 按钮 ========== */
 
-.btn-start {
-  width: 200px;
-  height: 50px;
+.btn-start-big {
+  width: 180px;
+  height: 180px;
+  border-radius: 90px;
+  background-color: #FF6B6B;
+  color: #FFFFFF;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.btn-pill-primary {
+  width: 160px;
+  height: 56px;
+  border-radius: 28px;
   background-color: #FF6B6B;
   color: #FFFFFF;
   font-size: 20px;
-  margin-top: 10px;
+  margin-left: 5px;
+  margin-right: 5px;
 }
 
-.btn-row {
-  flex-direction: row;
-  justify-content: center;
-  margin-top: 4px;
-  margin-bottom: 6px;
-}
-
-.btn-primary {
-  width: 130px;
-  height: 46px;
-  background-color: #FF6B6B;
+.btn-pill-secondary {
+  width: 140px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: #333333;
   color: #FFFFFF;
-  font-size: 16px;
-  margin-right: 10px;
+  font-size: 20px;
+  margin-left: 5px;
+  margin-right: 5px;
 }
 
-.btn-secondary {
-  width: 130px;
-  height: 46px;
-  background-color: #2D2D2D;
-  color: #FFFFFF;
-  font-size: 16px;
-  margin-right: 10px;
-}
-
-.btn-danger {
-  width: 130px;
-  height: 46px;
+.btn-pill-danger {
+  width: 140px;
+  height: 56px;
+  border-radius: 28px;
   background-color: #E74C3C;
   color: #FFFFFF;
-  font-size: 16px;
+  font-size: 20px;
+  margin-left: 5px;
+  margin-right: 5px;
 }

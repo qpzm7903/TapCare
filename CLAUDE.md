@@ -45,13 +45,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **不要尝试切换 interval 模式来提升采样率**，5Hz 是硬限制，只能在算法层面优化
 - 传感器返回**去重力后的线性加速度（单位 g）**，静止时 magnitude ≈ 0.25g
 
-### JS 运行时限制
+### 网络与 JS 运行时限制
 
 Lite Wearable 运行裁剪版 JS 引擎：
 
-- **禁用**: `fetch`、`XMLHttpRequest`、WebSocket、`async/await`、`Proxy`、复杂解构
-- **可用**: `setTimeout`/`setInterval`、`@system.sensor`（传感器）、`@system.file`（文件读写）、`console.log`、`router.push()`
-- **不支持的 CSS**: `rem/em/vw/vh`、`@keyframes` 动画、部分 Flexbox 高级属性
+- **完全禁用**: `XMLHttpRequest`、WebSocket、`async/await`、`Proxy`、复杂解构
+- **部分可用 (Fetch)**: 虽然支持 `fetch`，但**极其受限**，属于严重的不稳定因素：
+  - GT5及之前运动表+iOS 手机配对：无网络请求能力。
+  - 欧洲地区：无网络请求能力。
+  - **Payload 炸弹**：请求头超 **2KB** 或 单包传输数据超 **7KB** 将直接失败。
+- **推荐替代**: 使用 `@system.bridge` 与手机端配合，由手机端执行复杂应用逻辑。
+- **可用**: `setTimeout`/`setInterval`、`@system.sensor`、`@system.file`、`console.log`、`router.push()`
+- **文件体积限制**: 单个界面的 `.js` 逻辑文件大小**严禁超过 48KB**。
+- **不支持的 CSS**:
+  - `rem/em/vw/vh`、`@keyframes` 动画
+  - **CSS 布局坍塌陷阱**: 在多层嵌套的 `div` 中使用 `flex-grow: 1` 或高级 Flex 属性极易导致渲染引擎计算失败，使容器高度变为 0。在手表屏幕（466px）布局时，必须使用**最扁平的 DOM 结构**、**绝对的高度数值**以及**实体 `spacer` 占位块**来进行间距排版。
 - 手表无独立联网能力，不要编写任何网络请求代码
 
 ### SDK 版本约束

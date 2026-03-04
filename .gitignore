@@ -13,3 +13,4 @@
 /signing
 build-profile.json5
 /.sisyphus
+/logs/
