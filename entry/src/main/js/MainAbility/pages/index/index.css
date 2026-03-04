@@ -35,32 +35,17 @@
 
 .count-big {
   width: 380px;
-  height: 80px;
-  font-size: 64px;
+  height: 110px;
+  font-size: 100px;
   color: #FFFFFF;
 }
 
-.sub-text {
+.duration-big {
   width: 380px;
-  height: 30px;
-  font-size: 20px;
-  color: #AAAAAA;
-  margin-bottom: 10px;
-}
-
-.duration {
-  width: 380px;
-  height: 26px;
-  font-size: 16px;
+  height: 40px;
+  font-size: 32px;
   color: #FFFFFF;
-  margin-bottom: 6px;
-}
-
-.info-line {
-  width: 380px;
-  height: 24px;
-  font-size: 14px;
-  color: #AAAAAA;
+  margin-top: 8px;
 }
 
 .paused-label {
@@ -86,15 +71,6 @@
   font-size: 14px;
   color: #AAAAAA;
   margin-bottom: 4px;
-}
-
-/* ========== 进度条 ========== */
-
-.progress {
-  width: 300px;
-  height: 8px;
-  color: #FF6B6B;
-  margin-bottom: 6px;
 }
 
 /* ========== 按钮 ========== */

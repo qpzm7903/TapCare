@@ -2,8 +2,6 @@
   <!-- 空闲状态 -->
   <div class="view" if="{{isIdle}}">
     <text class="part-selector" onclick="switchPart">{{partName}} ▼</text>
-    <text class="count-big">0</text>
-    <text class="sub-text">目标: {{target}}次</text>
     <input type="button" class="btn-start" value="开始敲打" onclick="startSession" />
   </div>
 
@@ -11,21 +9,17 @@
   <div class="view" elif="{{isCounting}}">
     <text class="part-label">{{partName}}</text>
     <text class="count-big">{{count}}</text>
-    <text class="sub-text">/{{target}}</text>
-    <progress type="horizontal" percent="{{progressPercent}}" class="progress"></progress>
-    <text class="duration">{{durationText}}</text>
+    <text class="duration-big">{{durationText}}</text>
     <div class="btn-row">
       <input type="button" class="btn-secondary" value="暂停" onclick="pauseSession" />
       <input type="button" class="btn-danger" value="结束" onclick="endSession" />
     </div>
-    <text class="info-line">力度:{{forceLevelText}} | {{rhythmText}}</text>
   </div>
 
   <!-- 暂停状态 -->
   <div class="view" elif="{{isPaused}}">
     <text class="part-label">{{partName}}</text>
     <text class="count-big">{{count}}</text>
-    <text class="sub-text">/{{target}}</text>
     <text class="paused-label">已暂停</text>
     <div class="btn-row">
       <input type="button" class="btn-primary" value="继续" onclick="resumeSession" />
@@ -39,7 +33,6 @@
     <text class="count-big">{{count}}</text>
     <text class="part-label">{{partName}}</text>
     <text class="stat-text">时长 {{durationText}}</text>
-    <text class="stat-text">轻:{{forceLight}} 中:{{forceMedium}} 重:{{forceStrong}}</text>
     <input type="button" class="btn-start" value="再来一次" onclick="resetSession" />
   </div>
 </div>

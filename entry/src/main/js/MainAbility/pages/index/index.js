@@ -20,9 +20,7 @@ var PARTS = [
 var TAP = {
   TAP_THRESHOLD: 0.18,      // 绝对阈值：0.18g（降低以捕获更多轻敲）
   DELTA_THRESHOLD: 0.15,    // 帧间差值阈值：0.15g（捕获敲打边缘，留噪声余量）
-  MIN_DEBOUNCE_MS: 150,     // 最小防抖 150ms
-  FORCE_LIGHT_MAX: 0.4,     // 0.4g 以下为轻敲
-  FORCE_MEDIUM_MAX: 1.0     // 1.0g 以下为中敲，以上为重敲
+  MIN_DEBOUNCE_MS: 150      // 最小防抖 150ms
 };
 
 // Baseline 校准参数
@@ -41,15 +39,8 @@ export default {
     isPaused: false,
     isCompleted: false,
     count: 0,
-    target: 100,
     partName: '左胆经',
-    forceLevelText: '--',
-    rhythmText: '--',
-    progressPercent: 0,
-    durationText: '00:00',
-    forceLight: 0,
-    forceMedium: 0,
-    forceStrong: 0
+    durationText: '00:00'
   },
 
   onInit() {
@@ -57,7 +48,6 @@ export default {
 
     this._partIndex = 0;
     this._sensorActive = false;
-    this._hapticEnabled = true;
     this._baseline = 1.0;  // 初始值，启动后会自动校准
 
     this._sessionStartTime = 0;
@@ -67,9 +57,6 @@ export default {
     this._tapFired = false;  // 上升沿检测状态
     this._tapPeak = 0;       // FIRED 期间跟踪峰值
     this._prevMagnitude = -1; // 上一帧 magnitude，用于帧间差值检测
-    this._tapIntervals = [];
-    this._forceSum = 0;
-    this._forceCounts = { light: 0, medium: 0, strong: 0 };
 
     // Baseline 校准
     this._baselineSamples = [];
@@ -116,9 +103,6 @@ export default {
   startSession() {
     console.info('startSession');
     this.count = 0;
-    this.progressPercent = 0;
-    this.forceLevelText = '--';
-    this.rhythmText = '--';
     this.durationText = '00:00';
 
     this._sessionStartTime = Date.now();
@@ -128,9 +112,6 @@ export default {
     this._tapFired = false;
     this._tapPeak = 0;
     this._prevMagnitude = -1;
-    this._tapIntervals = [];
-    this._forceSum = 0;
-    this._forceCounts = { light: 0, medium: 0, strong: 0 };
     this._resetBaseline();
     this._debugLogCount = 0;
 
@@ -164,9 +145,6 @@ export default {
 
   resetSession() {
     this.count = 0;
-    this.progressPercent = 0;
-    this.forceLevelText = '--';
-    this.rhythmText = '--';
     this.durationText = '00:00';
     this._setState('idle');
   },
@@ -176,9 +154,6 @@ export default {
   _completeSession() {
     var elapsed = Date.now() - this._sessionStartTime - this._totalPauseDuration;
     this.durationText = this._formatDuration(elapsed);
-    this.forceLight = this._forceCounts.light;
-    this.forceMedium = this._forceCounts.medium;
-    this.forceStrong = this._forceCounts.strong;
     this._setState('completed');
     this._saveSession(elapsed);
   },
@@ -272,65 +247,11 @@ export default {
   _onTapDetected(peakAccel, timestamp) {
     console.info('Tap detected! peak=' + peakAccel.toFixed(2));
     this.count += 1;
-
-    if (peakAccel < TAP.FORCE_LIGHT_MAX) {
-      this.forceLevelText = '轻';
-      this._forceCounts.light += 1;
-    } else if (peakAccel < TAP.FORCE_MEDIUM_MAX) {
-      this.forceLevelText = '中';
-      this._forceCounts.medium += 1;
-    } else {
-      this.forceLevelText = '重';
-      this._forceCounts.strong += 1;
-    }
-
-    var forceNorm = ((peakAccel - TAP.TAP_THRESHOLD) / 5.0) * 100;
-    this._forceSum += Math.max(0, Math.min(100, Math.round(forceNorm)));
-
-    if (this._lastTapTime > 0) {
-      this._tapIntervals.push(timestamp - this._lastTapTime);
-      if (this._tapIntervals.length > 10) {
-        this._tapIntervals.shift();
-      }
-      this.rhythmText = this._evaluateRhythm();
-    }
     this._lastTapTime = timestamp;
 
-    this.progressPercent = Math.min(100, Math.round((this.count / this.target) * 100));
-
-    this._vibrate();
-
-    if (this.count >= this.target) {
-      this._stopSensor();
-      this._stopDurationTimer();
-      this._completeSession();
+    if (this.count % 100 === 0) {
+      this._vibrate();
     }
-  },
-
-  _evaluateRhythm() {
-    var len = this._tapIntervals.length;
-    if (len < 3) {
-      return '检测中';
-    }
-    var sum = 0;
-    var i;
-    for (i = 0; i < len; i++) {
-      sum += this._tapIntervals[i];
-    }
-    var avg = sum / len;
-    var variance = 0;
-    for (i = 0; i < len; i++) {
-      var diff = this._tapIntervals[i] - avg;
-      variance += diff * diff;
-    }
-    var cv = Math.sqrt(variance / len) / avg;
-    if (cv < 0.15) {
-      return '很稳';
-    }
-    if (cv < 0.3) {
-      return '良好';
-    }
-    return '不稳';
   },
 
   _resetBaseline() {
@@ -381,7 +302,7 @@ export default {
   // ==================== 振动 ====================
 
   _vibrate() {
-    if (!this._hapticEnabled || !vibrator) {
+    if (!vibrator) {
       return;
     }
     try {
@@ -426,15 +347,9 @@ export default {
         success: function(data) {
           try {
             var s = JSON.parse(data.text);
-            if (s.target) {
-              self.target = s.target;
-            }
             if (s.partIndex !== undefined && s.partIndex < PARTS.length) {
               self._partIndex = s.partIndex;
               self.partName = PARTS[s.partIndex].name;
-            }
-            if (s.hapticEnabled !== undefined) {
-              self._hapticEnabled = s.hapticEnabled;
             }
             if (s.baseline) {
               self._baseline = s.baseline;
@@ -455,9 +370,7 @@ export default {
       file.writeText({
         uri: SETTINGS_URI,
         text: JSON.stringify({
-          target: this.target,
           partIndex: this._partIndex,
-          hapticEnabled: this._hapticEnabled,
           baseline: this._baseline
         }),
         success: function() {},
@@ -476,14 +389,7 @@ export default {
           timestamp: Date.now(),
           part: PARTS[this._partIndex].id,
           count: this.count,
-          target: this.target,
-          duration: elapsed,
-          completed: this.count >= this.target,
-          force: {
-            light: this._forceCounts.light,
-            medium: this._forceCounts.medium,
-            strong: this._forceCounts.strong
-          }
+          duration: elapsed
         }),
         success: function() {},
         fail: function() {}
