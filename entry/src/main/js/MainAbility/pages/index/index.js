@@ -16,10 +16,10 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 敲打检测核心参数 (基于 50Hz/20ms 采样率优化)
+// 敲打检测核心参数 (适配 5Hz/200ms 低频采样率优化)
 var TAP = {
-  THRESHOLD: 0.15,          // 敲击峰值绝对阈值 (g)
-  COOLDOWN_FRAMES: 7        // 敲击冷却帧数 (7帧 * 20ms = 140ms 防抖)
+  THRESHOLD: 0.08,          // 放宽阈值 (g)：5Hz抓不到波峰，只能抓残余动能或抬手瞬间
+  MIN_DEBOUNCE_MS: 380      // 动作冷却期 (ms)：约等于 2 帧 (400ms) 防抖
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -57,7 +57,7 @@ export default {
     this._pauseStartTime = 0;
 
     // 零分配峰值检测状态
-    this._cooldownTimer = 0;  // 倒数帧数
+    this._lastTapTime = 0;  // 绝对时间倒数
     this._tapFired = false;
     this._tapPeak = 0;
 
@@ -99,7 +99,7 @@ export default {
 
     // 重置检测状态
     this._baselineInitialized = false;
-    this._cooldownTimer = 0;
+    this._lastTapTime = 0;
     this._tapFired = false;
     this._tapPeak = 0;
 
@@ -149,10 +149,11 @@ export default {
     this._saveSession(elapsed);
   },
 
-  // ==================== 50Hz 敲打检测 ====================
-  // 注意：此函数每秒会被调用 50 次，内部【严禁】创建任何对象、数组、闭包，或执行高频 logging！
+  // ==================== 5Hz 敲打检测 ====================
+  // 此时 interval 为 normal (200ms)
 
   _processSensorData(self, x, y, z) {
+    var now = Date.now();
     // 1. 计算当前加速度模长
     var magnitude = Math.sqrt(x * x + y * y + z * z);
 
@@ -160,57 +161,53 @@ export default {
     if (!self._baselineInitialized) {
       self._baseline = magnitude;
       self._baselineInitialized = true;
+      self._lastTapTime = now;
       return;
     }
 
     // 提取动态加速度差值 (绝对值)
     var dynamicAccel = Math.abs(magnitude - self._baseline);
 
-    // 平滑更新基线 (仅在静止或轻微运动时快速更新，避免被巨大的敲击峰值带偏)
-    if (dynamicAccel < TAP.THRESHOLD) {
-      // 0.05 权重逼近，大约 20 帧 (400ms) 适应姿势变化
-      self._baseline = self._baseline * 0.95 + magnitude * 0.05;
+    // 平滑更新基线 (静止或轻微运动时快速更新，适应姿势变化)
+    // 5Hz下，每秒只有5帧，0.15 权重逼近更快
+    if (dynamicAccel < 0.05) {
+      self._baseline = self._baseline * 0.85 + magnitude * 0.15;
     }
 
-    // 3. 冷却期倒数 (代替 Date.now() 计算时间差)
-    if (self._cooldownTimer > 0) {
-      self._cooldownTimer--;
-      // 冷却期间更新峰值用于记录
-      if (dynamicAccel > self._tapPeak) {
-        self._tapPeak = dynamicAccel;
-      }
-      return; // 冷却中，忽略新触发
+    // 冷却期间更新峰值用于记录
+    if (dynamicAccel > self._tapPeak) {
+      self._tapPeak = dynamicAccel;
     }
 
-    // 4. 阈值触发 (上升沿)
+    // 3. 阈值触发与时间防抖
+    var sinceLastTap = now - self._lastTapTime;
+
     if (dynamicAccel >= TAP.THRESHOLD) {
       if (!self._tapFired) {
-        // 触发一次有效敲击
-        self._tapFired = true;
-        self._tapPeak = dynamicAccel;
-        self._cooldownTimer = TAP.COOLDOWN_FRAMES; // 进入冷却
-
-        self._onTapDetected();
-      } else {
-        // 已处于上升期，更新峰值
-        if (dynamicAccel > self._tapPeak) {
+        if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
+          // 触发一次有效敲击
+          self._tapFired = true;
           self._tapPeak = dynamicAccel;
+          self._lastTapTime = now;
+
+          self._onTapDetected();
         }
       }
     } else {
-      // 信号回落低于阈值，重置上升沿状态，准备迎接下一次敲击
-      if (self._tapFired) {
+      // 信号回落低于一个极低阈值 (如 0.03g)，准备迎接下一次敲击
+      // 5Hz 模式下，只要偏离值降低，就认为动作停止
+      if (self._tapFired && dynamicAccel < 0.04) {
         self._tapFired = false;
       }
     }
 
-    // 每间隔 10 帧 (约 200ms) 更新一次 UI 显示，避免高频刷新阻塞渲染线程
+    // UI 显示
     self._renderTick = (self._renderTick || 0) + 1;
-    if (self._renderTick % 10 === 0) {
+    if (self._renderTick % 2 === 0) { // 200ms一帧，2帧400ms更新一次 UI 足矣
       self.debugBaseline = self._baseline.toFixed(3);
       self.debugDynAccel = dynamicAccel.toFixed(3);
       self.debugPeak = self._tapPeak.toFixed(3);
-      self.debugCooldown = self._cooldownTimer;
+      self.debugCooldown = sinceLastTap; // 直接显示毫秒数
       self.debugFired = self._tapFired;
     }
   },
@@ -235,7 +232,7 @@ export default {
       self.debugBaseline = 'sub_start'; // 标记进入订阅流程
 
       sensor.subscribeAccelerometer({
-        interval: 'ui',
+        interval: 'normal',
         success: function (data) {
           try {
             self._rawCbCount = (self._rawCbCount || 0) + 1;
