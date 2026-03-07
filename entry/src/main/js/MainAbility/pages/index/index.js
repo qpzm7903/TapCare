@@ -215,10 +215,16 @@ export default {
     if (isDataFresh && self._latestAccel > 0.06 && self._latestGyro > 0.8) {
       if (!self._tapFired && sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
         // 触发一次有效敲击
+        console.info('[TAP_HIT] A:' + self._latestAccel.toFixed(3) + ' G:' + self._latestGyro.toFixed(3) + ' (gap:' + sinceLastTap + 'ms)');
         self._tapFired = true;
         self._lastTapTime = now;
         self._onTapDetected();
+      } else {
+        console.info('[TAP_BLOCK] debounce ' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
       }
+    } else if (isDataFresh && (self._latestAccel > 0.06 || self._latestGyro > 0.8)) {
+      // 如果只有一个传感器达到了阈值，打印出来看看是哪个差了一口气
+      console.info('[TAP_MISS] A:' + self._latestAccel.toFixed(3) + ' G:' + self._latestGyro.toFixed(3));
     } else {
       // 回落：必须两个都降下来
       if (self._tapFired && self._latestAccel < 0.04 && self._latestGyro < 0.4) {
