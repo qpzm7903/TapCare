@@ -211,8 +211,7 @@ export default {
 
     var sinceLastTap = now - self._lastTapTime;
 
-    // 联合条件：从日志分析，敲击时 5Hz 下加速度变动极不敏感 (经常在 0.01~0.05 之间)，但陀螺仪极度敏感 (全在 1.0~5.0 之间)
-    // 阈值调整：加速度降低到 0.015 (只要有一点点扰动即可)，陀螺仪提高到 1.5 (确信有旋转撞击)
+    // 联合条件：加速度有扰动 (>0.015G) 且 存在手腕旋转撞击 (>1.5 rad/s)
     if (isDataFresh && self._latestAccel > 0.015 && self._latestGyro > 1.5) {
       if (!self._tapFired && sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
         // 触发一次有效敲击
@@ -221,15 +220,22 @@ export default {
         self._lastTapTime = now;
         self._onTapDetected();
       } else {
-        console.info('[TAP_BLOCK] debounce ' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
+        if (self._tapFired) {
+          console.info('[TAP_BLOCK] LATCHED! gap:' + sinceLastTap + 'ms');
+        } else {
+          console.info('[TAP_BLOCK] TOO FAST! gap:' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
+        }
       }
     } else if (isDataFresh && (self._latestAccel > 0.015 || self._latestGyro > 1.5)) {
       // 如果只有一个传感器达到了阈值，打印出来看看是哪个差了一口气
       console.info('[TAP_MISS] A:' + self._latestAccel.toFixed(3) + ' G:' + self._latestGyro.toFixed(3));
-    } else {
-      // 回落：必须两个都降下来
-      if (self._tapFired && self._latestAccel < 0.01 && self._latestGyro < 0.8) {
+    }
+
+    // 回落解除锁定状态：任一传感器降下来，或者距离上次敲击已经过了足够长时间(800ms)强制解锁，防止死锁
+    if (self._tapFired) {
+      if (self._latestAccel < 0.015 || self._latestGyro < 1.0 || sinceLastTap > 800) {
         self._tapFired = false;
+        console.info('[TAP_RESET] Unlatched! gap:' + sinceLastTap + 'ms');
       }
     }
 
