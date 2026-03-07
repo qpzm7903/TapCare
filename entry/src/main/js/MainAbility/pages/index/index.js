@@ -231,22 +231,35 @@ export default {
     }
     var self = this;
     try {
+      self.debugBaseline = 'sub_start'; // 标记进入订阅流程
+
       sensor.subscribeAccelerometer({
         interval: 'game',
         success: function (data) {
+          // 实时记录回调次数，证明底层还在推数据
+          self._rawCbCount = (self._rawCbCount || 0) + 1;
+          if (self._rawCbCount % 5 === 0) {
+            // 直接将最原始的回调计数绑到 UI，如果这里不走，说明回调彻底死掉
+            self.debugBaseline = 'CB: ' + self._rawCbCount;
+          }
+
           if (self.state === 'counting') {
-            self._processSensorData(self, data.x, data.y, data.z);
+            // 安全防护：万一 data 结构不对
+            var x = data.x || 0;
+            var y = data.y || 0;
+            var z = data.z || 0;
+            self._processSensorData(self, x, y, z);
           }
         },
         fail: function (data, code) {
-          console.error('sensor fail: ' + code + ', data: ' + JSON.stringify(data));
+          self.debugPeak = 'FAIL: ' + code;
           self._sensorActive = false;
         }
       });
       this._sensorActive = true;
-      console.info('sensor started');
+      self.debugDynAccel = 'subs_OK'; // 标记订阅API调用成功
     } catch (e) {
-      console.error('sensor error: ' + e);
+      self.debugPeak = 'EXC: ' + e;
       this._sensorActive = false;
     }
   }
