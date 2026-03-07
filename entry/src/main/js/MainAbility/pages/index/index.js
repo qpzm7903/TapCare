@@ -16,17 +16,10 @@ var PARTS = [
   { id: 'sanjiao', name: '三焦经' }
 ];
 
-// 敲打检测参数（5Hz 采样率优化）
+// 敲打检测核心参数 (基于 50Hz/20ms 采样率优化)
 var TAP = {
-  TAP_THRESHOLD: 0.18,      // 绝对阈值：0.18g（降低以捕获更多轻敲）
-  DELTA_THRESHOLD: 0.15,    // 帧间差值阈值：0.15g（捕获敲打边缘，留噪声余量）
-  MIN_DEBOUNCE_MS: 150      // 最小防抖 150ms
-};
-
-// Baseline 校准参数
-var CAL = {
-  SAMPLE_COUNT: 10,         // 采集 10 个样本（约 2 秒）
-  USE_LOWEST: 6             // 取最小的 6 个计算均值（排除运动干扰）
+  THRESHOLD: 0.15,          // 敲击峰值绝对阈值 (g)
+  COOLDOWN_FRAMES: 7        // 敲击冷却帧数 (7帧 * 20ms = 140ms 防抖)
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -44,38 +37,29 @@ export default {
   },
 
   onInit() {
-    console.info('TapCare page onInit');
-
     this._partIndex = 0;
     this._sensorActive = false;
-    this._baseline = 1.0;  // 初始值，启动后会自动校准
 
+    // EMA (指数移动平均) 动态基线
+    this._baseline = 1.0;
+    this._baselineInitialized = false;
+
+    // 状态机制
     this._sessionStartTime = 0;
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
-    this._lastTapTime = 0;
-    this._tapFired = false;  // 上升沿检测状态
-    this._tapPeak = 0;       // FIRED 期间跟踪峰值
-    this._prevMagnitude = -1; // 上一帧 magnitude，用于帧间差值检测
 
-    // Baseline 校准
-    this._baselineSamples = [];
-    this._baselineCalibrated = false;
+    // 零分配峰值检测状态
+    this._cooldownTimer = 0;  // 倒数帧数
+    this._tapFired = false;
+    this._tapPeak = 0;
 
     this._durationTimer = null;
-    this._debugLogCount = 0;
-
     this._loadSettings();
   },
 
-  onReady() {
-    console.info('TapCare page onReady, state=' + this.state);
-  },
-
-  onShow() {
-    console.info('TapCare page onShow');
-  },
-
+  onReady() { },
+  onShow() { },
   onDestroy() {
     this._stopSensor();
     this._stopDurationTimer();
@@ -92,28 +76,25 @@ export default {
   // ==================== UI 事件 ====================
 
   switchPart() {
-    if (this.state !== 'idle') {
-      return;
-    }
+    if (this.state !== 'idle') return;
     this._partIndex = (this._partIndex + 1) % PARTS.length;
     this.partName = PARTS[this._partIndex].name;
     this._saveSettings();
   },
 
   startSession() {
-    console.info('startSession');
     this.count = 0;
     this.durationText = '00:00';
 
     this._sessionStartTime = Date.now();
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
-    this._lastTapTime = 0;
+
+    // 重置检测状态
+    this._baselineInitialized = false;
+    this._cooldownTimer = 0;
     this._tapFired = false;
     this._tapPeak = 0;
-    this._prevMagnitude = -1;
-    this._resetBaseline();
-    this._debugLogCount = 0;
 
     this._setState('counting');
     this._startSensor();
@@ -132,6 +113,9 @@ export default {
       this._totalPauseDuration += Date.now() - this._pauseStartTime;
       this._pauseStartTime = 0;
     }
+    // 恢复时重新校准基线，防止用户变换姿势
+    this._baselineInitialized = false;
+
     this._setState('counting');
     this._startSensor();
     this._startDurationTimer();
@@ -158,105 +142,68 @@ export default {
     this._saveSession(elapsed);
   },
 
-  // ==================== 敲打检测 ====================
+  // ==================== 50Hz 敲打检测 ====================
+  // 注意：此函数每秒会被调用 50 次，内部【严禁】创建任何对象、数组、闭包，或执行高频 logging！
 
   _processSensorData(x, y, z) {
-    var now = Date.now();
+    // 1. 计算当前加速度模长
     var magnitude = Math.sqrt(x * x + y * y + z * z);
 
-    // Baseline 校准：采集样本，取最小的几个均值（排除运动干扰）
-    if (!this._baselineCalibrated) {
-      this._baselineSamples.push(magnitude);
-      console.info('[CAL] ' + this._baselineSamples.length + '/' + CAL.SAMPLE_COUNT + ' mag=' + magnitude.toFixed(3));
-      if (this._baselineSamples.length >= CAL.SAMPLE_COUNT) {
-        // 手写冒泡排序（Lite Wearable 不支持 Array.sort）
-        var arr = this._baselineSamples;
-        var i;
-        var j;
-        var tmp;
-        for (i = 0; i < arr.length - 1; i++) {
-          for (j = 0; j < arr.length - 1 - i; j++) {
-            if (arr[j] > arr[j + 1]) {
-              tmp = arr[j];
-              arr[j] = arr[j + 1];
-              arr[j + 1] = tmp;
-            }
-          }
-        }
-        // 取最小的 CAL.USE_LOWEST 个样本的均值
-        var sum = 0;
-        for (i = 0; i < CAL.USE_LOWEST; i++) {
-          sum += arr[i];
-        }
-        this._baseline = sum / CAL.USE_LOWEST;
-        this._baselineCalibrated = true;
-        this._prevMagnitude = magnitude;  // 用最后一帧初始化，避免首帧 delta 异常
-        this._lastTapTime = now;          // 避免首帧 since 为天文数字导致误触发
-        console.info('[CAL] DONE baseline=' + this._baseline.toFixed(3) + ' (sorted: ' + arr[0].toFixed(2) + '~' + arr[arr.length - 1].toFixed(2) + ')');
-      }
+    // 2. 初始化/更新动态基线 (EMA 算法)
+    if (!this._baselineInitialized) {
+      this._baseline = magnitude;
+      this._baselineInitialized = true;
       return;
     }
 
+    // 提取动态加速度差值 (绝对值)
     var dynamicAccel = Math.abs(magnitude - this._baseline);
 
-    // 帧间差值：当前帧与上一帧 magnitude 的变化量
-    var delta = 0;
-    if (this._prevMagnitude >= 0) {
-      delta = Math.abs(magnitude - this._prevMagnitude);
-    }
-    this._prevMagnitude = magnitude;
-
-    // 综合信号：取绝对偏移和帧间差值中较大的信号
-    // 绝对偏移捕获采到峰值的情况，帧间差值捕获采到边缘的情况
-    var dynHit = dynamicAccel >= TAP.TAP_THRESHOLD;
-    var deltaHit = delta >= TAP.DELTA_THRESHOLD;
-    var signal = Math.max(dynamicAccel, delta);
-
-    // 每 20 帧输出一次静态数据
-    this._debugLogCount += 1;
-    if (this._debugLogCount % 20 === 0) {
-      console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' base=' + this._baseline.toFixed(2));
+    // 平滑更新基线 (仅在静止或轻微运动时快速更新，避免被巨大的敲击峰值带偏)
+    if (dynamicAccel < TAP.THRESHOLD) {
+      // 0.05 权重逼近，大约 20 帧 (400ms) 适应姿势变化
+      this._baseline = this._baseline * 0.95 + magnitude * 0.05;
     }
 
-    // 上升沿检测：信号必须回落才能触发下一次
-    if (dynHit || deltaHit) {
+    // 3. 冷却期倒数 (代替 Date.now() 计算时间差)
+    if (this._cooldownTimer > 0) {
+      this._cooldownTimer--;
+      // 冷却期间更新峰值用于记录
+      if (dynamicAccel > this._tapPeak) {
+        this._tapPeak = dynamicAccel;
+      }
+      return; // 冷却中，忽略新触发
+    }
+
+    // 4. 阈值触发 (上升沿)
+    if (dynamicAccel >= TAP.THRESHOLD) {
       if (!this._tapFired) {
-        var sinceLastTap = now - this._lastTapTime;
-        if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
-          this._tapFired = true;
-          this._tapPeak = signal;
-          var reason = dynHit && deltaHit ? 'BOTH' : (dynHit ? 'DYN' : 'DELTA');
-          console.info('[TAP] +++ FIRE ' + reason + ' dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' since=' + sinceLastTap);
-          this._onTapDetected(signal, now);
-        } else {
-          console.info('[TAP] --- debounce skip (' + sinceLastTap + 'ms)');
-        }
+        // 触发一次有效敲击
+        this._tapFired = true;
+        this._tapPeak = dynamicAccel;
+        this._cooldownTimer = TAP.COOLDOWN_FRAMES; // 进入冷却
+
+        this._onTapDetected();
       } else {
-        if (signal > this._tapPeak) {
-          this._tapPeak = signal;
+        // 已处于上升期，更新峰值
+        if (dynamicAccel > this._tapPeak) {
+          this._tapPeak = dynamicAccel;
         }
       }
     } else {
+      // 信号回落低于阈值，重置上升沿状态，准备迎接下一次敲击
       if (this._tapFired) {
-        console.info('[TAP] --- reset (peak was ' + this._tapPeak.toFixed(3) + ')');
         this._tapFired = false;
       }
     }
   },
 
-  _onTapDetected(peakAccel, timestamp) {
-    console.info('Tap detected! peak=' + peakAccel.toFixed(2));
+  _onTapDetected() {
     this.count += 1;
-    this._lastTapTime = timestamp;
-
+    // 每 100 次给予反馈，提醒进度
     if (this.count % 100 === 0) {
       this._vibrate();
     }
-  },
-
-  _resetBaseline() {
-    this._baselineSamples = [];
-    this._baselineCalibrated = false;
   },
 
   // ==================== 传感器 ====================
@@ -268,13 +215,13 @@ export default {
     var self = this;
     try {
       sensor.subscribeAccelerometer({
-        interval: 'normal',
-        success: function(data) {
+        interval: 'game',
+        success: function (data) {
           if (self.state === 'counting') {
             self._processSensorData(data.x, data.y, data.z);
           }
         },
-        fail: function(data, code) {
+        fail: function (data, code) {
           console.error('sensor fail: ' + code + ', data: ' + JSON.stringify(data));
           self._sensorActive = false;
         }
@@ -286,7 +233,7 @@ export default {
       this._sensorActive = false;
     }
   }
-,
+  ,
   _stopSensor() {
     if (!this._sensorActive) {
       return;
@@ -317,7 +264,7 @@ export default {
   _startDurationTimer() {
     this._stopDurationTimer();
     var self = this;
-    this._durationTimer = setInterval(function() {
+    this._durationTimer = setInterval(function () {
       var elapsed = Date.now() - self._sessionStartTime - self._totalPauseDuration;
       self.durationText = self._formatDuration(elapsed);
     }, 1000);
@@ -344,7 +291,7 @@ export default {
     try {
       file.readText({
         uri: SETTINGS_URI,
-        success: function(data) {
+        success: function (data) {
           try {
             var s = JSON.parse(data.text);
             if (s.partIndex !== undefined && s.partIndex < PARTS.length) {
@@ -358,7 +305,7 @@ export default {
             console.error('parse settings: ' + e);
           }
         },
-        fail: function() {}
+        fail: function () { }
       });
     } catch (e) {
       console.error('readText error: ' + e);
@@ -373,8 +320,8 @@ export default {
           partIndex: this._partIndex,
           baseline: this._baseline
         }),
-        success: function() {},
-        fail: function() {}
+        success: function () { },
+        fail: function () { }
       });
     } catch (e) {
       console.error('writeText error: ' + e);
@@ -391,8 +338,8 @@ export default {
           count: this.count,
           duration: elapsed
         }),
-        success: function() {},
-        fail: function() {}
+        success: function () { },
+        fail: function () { }
       });
     } catch (e) {
       console.error('save session error: ' + e);
