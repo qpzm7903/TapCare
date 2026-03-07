@@ -39,7 +39,8 @@ export default {
     debugBaseline: '0.00',
     debugDynAccel: '0.00',
     debugPeak: '0.00',
-    debugCooldown: 0,
+    debugGyro: '0.00',
+    debugGyroPeak: '0.00',
     debugFired: false
   },
 
@@ -60,6 +61,13 @@ export default {
     this._lastTapTime = 0;  // 绝对时间倒数
     this._tapFired = false;
     this._tapPeak = 0;
+
+    // 传感器融合状态
+    this._latestAccel = 0;
+    this._latestAccelTime = 0;
+    this._latestGyro = 0;
+    this._latestGyroTime = 0;
+    this._gyroPeak = 0;
 
     this._durationTimer = null;
     this._loadSettings();
@@ -102,6 +110,7 @@ export default {
     this._lastTapTime = 0;
     this._tapFired = false;
     this._tapPeak = 0;
+    this._gyroPeak = 0;
 
     this._setState('counting');
     this._startSensor();
@@ -149,15 +158,13 @@ export default {
     this._saveSession(elapsed);
   },
 
-  // ==================== 5Hz 敲打检测 ====================
+  // ==================== 5Hz 传感器融合检测 (Accel + Gyro) ====================
   // 此时 interval 为 normal (200ms)
 
-  _processSensorData(self, x, y, z) {
+  _processAccel(self, x, y, z) {
     var now = Date.now();
-    // 1. 计算当前加速度模长
     var magnitude = Math.sqrt(x * x + y * y + z * z);
 
-    // 2. 初始化/更新动态基线 (EMA 算法)
     if (!self._baselineInitialized) {
       self._baseline = magnitude;
       self._baselineInitialized = true;
@@ -165,49 +172,68 @@ export default {
       return;
     }
 
-    // 提取动态加速度差值 (绝对值)
     var dynamicAccel = Math.abs(magnitude - self._baseline);
 
-    // 平滑更新基线 (静止或轻微运动时快速更新，适应姿势变化)
-    // 5Hz下，每秒只有5帧，0.15 权重逼近更快
     if (dynamicAccel < 0.05) {
       self._baseline = self._baseline * 0.85 + magnitude * 0.15;
     }
 
-    // 冷却期间更新峰值用于记录
+    self._latestAccel = dynamicAccel;
+    self._latestAccelTime = now;
+
     if (dynamicAccel > self._tapPeak) {
       self._tapPeak = dynamicAccel;
     }
 
-    // 3. 阈值触发与时间防抖
+    self._checkFusion(self, now);
+  },
+
+  _processGyro(self, x, y, z) {
+    var now = Date.now();
+    // 陀螺仪的角速度模长 (rad/s)
+    var gyroMag = Math.sqrt(x * x + y * y + z * z);
+
+    self._latestGyro = gyroMag;
+    self._latestGyroTime = now;
+
+    if (gyroMag > self._gyroPeak) {
+      self._gyroPeak = gyroMag;
+    }
+
+    self._checkFusion(self, now);
+  },
+
+  _checkFusion(self, now) {
+    // 联合判定窗口: 保证两个传感器的数据都是在最近 300ms (1.5帧) 内到达的
+    var accelAge = now - (self._latestAccelTime || 0);
+    var gyroAge = now - (self._latestGyroTime || 0);
+    var isDataFresh = accelAge < 300 && gyroAge < 300;
+
     var sinceLastTap = now - self._lastTapTime;
 
-    if (dynamicAccel >= TAP.THRESHOLD) {
-      if (!self._tapFired) {
-        if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
-          // 触发一次有效敲击
-          self._tapFired = true;
-          self._tapPeak = dynamicAccel;
-          self._lastTapTime = now;
-
-          self._onTapDetected();
-        }
+    // 联合条件：加速度有线性挥动 (>0.06G) 且 存在手腕旋转爆发 (>0.8 rad/s)
+    if (isDataFresh && self._latestAccel > 0.06 && self._latestGyro > 0.8) {
+      if (!self._tapFired && sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
+        // 触发一次有效敲击
+        self._tapFired = true;
+        self._lastTapTime = now;
+        self._onTapDetected();
       }
     } else {
-      // 信号回落低于一个极低阈值 (如 0.03g)，准备迎接下一次敲击
-      // 5Hz 模式下，只要偏离值降低，就认为动作停止
-      if (self._tapFired && dynamicAccel < 0.04) {
+      // 回落：必须两个都降下来
+      if (self._tapFired && self._latestAccel < 0.04 && self._latestGyro < 0.4) {
         self._tapFired = false;
       }
     }
 
     // UI 显示
     self._renderTick = (self._renderTick || 0) + 1;
-    if (self._renderTick % 2 === 0) { // 200ms一帧，2帧400ms更新一次 UI 足矣
+    if (self._renderTick % 2 === 0) {
       self.debugBaseline = self._baseline.toFixed(3);
-      self.debugDynAccel = dynamicAccel.toFixed(3);
+      self.debugDynAccel = (self._latestAccel || 0).toFixed(3);
       self.debugPeak = self._tapPeak.toFixed(3);
-      self.debugCooldown = sinceLastTap; // 直接显示毫秒数
+      self.debugGyro = (self._latestGyro || 0).toFixed(3);
+      self.debugGyroPeak = self._gyroPeak.toFixed(3);
       self.debugFired = self._tapFired;
     }
   },
@@ -229,6 +255,7 @@ export default {
     var self = this;
     try {
       try { sensor.unsubscribeAccelerometer(); } catch (e) { }
+      try { sensor.unsubscribeGyroscope(); } catch (e) { }
       self.debugBaseline = 'sub_start'; // 标记进入订阅流程
 
       sensor.subscribeAccelerometer({
@@ -236,44 +263,57 @@ export default {
         success: function (data) {
           try {
             self._rawCbCount = (self._rawCbCount || 0) + 1;
-
-            // 每 1 帧都强制更新基线，证明收到数据
-            self.debugBaseline = 'CB: ' + self._rawCbCount;
+            // 收到加速度即更新心跳
+            self.debugBaseline = 'CBA:' + self._rawCbCount;
 
             if (self.state === 'counting') {
-              // 安全防护：万一 data 结构不对
-              var x = data.x || 0;
-              var y = data.y || 0;
-              var z = data.z || 0;
-              self._processSensorData(self, x, y, z);
+              self._processAccel(self, data.x || 0, data.y || 0, data.z || 0);
             }
           } catch (err) {
-            // 捕获到任何隐藏的 JS 异常，直接拍到屏幕上
-            self.debugPeak = 'E:' + (err.message || err);
+            self.debugPeak = 'EA:' + (err.message || err);
           }
         },
         fail: function (data, code) {
-          self.debugPeak = 'FAIL: ' + code;
+          self.debugPeak = 'FAIL A: ' + code;
           self._sensorActive = false;
         }
       });
+
+      sensor.subscribeGyroscope({
+        interval: 'normal',
+        success: function (data) {
+          try {
+            if (self.state === 'counting') {
+              self._processGyro(self, data.x || 0, data.y || 0, data.z || 0);
+            }
+          } catch (err) {
+            self.debugGyroPeak = 'EG:' + (err.message || err);
+          }
+        },
+        fail: function (data, code) {
+          self.debugGyroPeak = 'FAIL G: ' + code;
+          self._sensorActive = false;
+        }
+      });
+
       this._sensorActive = true;
       self.debugDynAccel = 'subs_OK'; // 标记订阅API调用成功
     } catch (e) {
       self.debugPeak = 'EXC: ' + e;
       this._sensorActive = false;
     }
-  }
-  ,
+  },
+
   _stopSensor() {
     if (!this._sensorActive) {
       return;
     }
     try {
       sensor.unsubscribeAccelerometer();
-    } catch (e) {
-      console.error('sensor unsub error: ' + e);
-    }
+    } catch (e) { }
+    try {
+      sensor.unsubscribeGyroscope();
+    } catch (e) { }
     this._sensorActive = false;
   },
 
