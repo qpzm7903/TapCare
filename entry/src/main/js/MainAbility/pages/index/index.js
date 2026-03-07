@@ -152,66 +152,66 @@ export default {
   // ==================== 50Hz 敲打检测 ====================
   // 注意：此函数每秒会被调用 50 次，内部【严禁】创建任何对象、数组、闭包，或执行高频 logging！
 
-  _processSensorData(x, y, z) {
+  _processSensorData(self, x, y, z) {
     // 1. 计算当前加速度模长
     var magnitude = Math.sqrt(x * x + y * y + z * z);
 
     // 2. 初始化/更新动态基线 (EMA 算法)
-    if (!this._baselineInitialized) {
-      this._baseline = magnitude;
-      this._baselineInitialized = true;
+    if (!self._baselineInitialized) {
+      self._baseline = magnitude;
+      self._baselineInitialized = true;
       return;
     }
 
     // 提取动态加速度差值 (绝对值)
-    var dynamicAccel = Math.abs(magnitude - this._baseline);
+    var dynamicAccel = Math.abs(magnitude - self._baseline);
 
     // 平滑更新基线 (仅在静止或轻微运动时快速更新，避免被巨大的敲击峰值带偏)
     if (dynamicAccel < TAP.THRESHOLD) {
       // 0.05 权重逼近，大约 20 帧 (400ms) 适应姿势变化
-      this._baseline = this._baseline * 0.95 + magnitude * 0.05;
+      self._baseline = self._baseline * 0.95 + magnitude * 0.05;
     }
 
     // 3. 冷却期倒数 (代替 Date.now() 计算时间差)
-    if (this._cooldownTimer > 0) {
-      this._cooldownTimer--;
+    if (self._cooldownTimer > 0) {
+      self._cooldownTimer--;
       // 冷却期间更新峰值用于记录
-      if (dynamicAccel > this._tapPeak) {
-        this._tapPeak = dynamicAccel;
+      if (dynamicAccel > self._tapPeak) {
+        self._tapPeak = dynamicAccel;
       }
       return; // 冷却中，忽略新触发
     }
 
     // 4. 阈值触发 (上升沿)
     if (dynamicAccel >= TAP.THRESHOLD) {
-      if (!this._tapFired) {
+      if (!self._tapFired) {
         // 触发一次有效敲击
-        this._tapFired = true;
-        this._tapPeak = dynamicAccel;
-        this._cooldownTimer = TAP.COOLDOWN_FRAMES; // 进入冷却
+        self._tapFired = true;
+        self._tapPeak = dynamicAccel;
+        self._cooldownTimer = TAP.COOLDOWN_FRAMES; // 进入冷却
 
-        this._onTapDetected();
+        self._onTapDetected();
       } else {
         // 已处于上升期，更新峰值
-        if (dynamicAccel > this._tapPeak) {
-          this._tapPeak = dynamicAccel;
+        if (dynamicAccel > self._tapPeak) {
+          self._tapPeak = dynamicAccel;
         }
       }
     } else {
       // 信号回落低于阈值，重置上升沿状态，准备迎接下一次敲击
-      if (this._tapFired) {
-        this._tapFired = false;
+      if (self._tapFired) {
+        self._tapFired = false;
       }
     }
 
     // 每间隔 10 帧 (约 200ms) 更新一次 UI 显示，避免高频刷新阻塞渲染线程
-    this._renderTick = (this._renderTick || 0) + 1;
-    if (this._renderTick % 10 === 0) {
-      this.debugBaseline = this._baseline.toFixed(3);
-      this.debugDynAccel = dynamicAccel.toFixed(3);
-      this.debugPeak = this._tapPeak.toFixed(3);
-      this.debugCooldown = this._cooldownTimer;
-      this.debugFired = this._tapFired;
+    self._renderTick = (self._renderTick || 0) + 1;
+    if (self._renderTick % 10 === 0) {
+      self.debugBaseline = self._baseline.toFixed(3);
+      self.debugDynAccel = dynamicAccel.toFixed(3);
+      self.debugPeak = self._tapPeak.toFixed(3);
+      self.debugCooldown = self._cooldownTimer;
+      self.debugFired = self._tapFired;
     }
   },
 
@@ -235,7 +235,7 @@ export default {
         interval: 'game',
         success: function (data) {
           if (self.state === 'counting') {
-            self._processSensorData(data.x, data.y, data.z);
+            self._processSensorData(self, data.x, data.y, data.z);
           }
         },
         fail: function (data, code) {
