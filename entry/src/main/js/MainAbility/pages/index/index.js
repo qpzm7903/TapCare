@@ -19,7 +19,7 @@ var PARTS = [
 // 敲打检测核心参数 (适配 5Hz/200ms 低频采样率优化)
 var TAP = {
   THRESHOLD: 0.08,          // 放宽阈值 (g)：5Hz抓不到波峰，只能抓残余动能或抬手瞬间
-  MIN_DEBOUNCE_MS: 380      // 动作冷却期 (ms)：约等于 2 帧 (400ms) 防抖
+  MIN_DEBOUNCE_MS: 350      // 动作冷却期 (ms)：约等于 2 帧 (400ms) 防抖，略放宽以容纳过快连击
 };
 
 var SETTINGS_URI = 'internal://app/settings.json';
@@ -241,7 +241,7 @@ export default {
 
     // 4. 动态敲击判定 (依赖瞬变 Surge，不再依赖绝对阈值防止卡死)
     var isTap = (
-      (aSurge > 0.10 && g > 1.5) ||  // 典型动作：产生了中等振动差，且手臂在快速甩动
+      (aSurge > 0.08 && g > 1.5) ||  // 典型动作：产生了中等振动差，且手臂在快速甩动 (门槛下调至0.08防漏击)
       (aSurge > 0.15) ||             // 纯强力打击：不管手转没转，肉体发生了剧烈形变振颤
       (gSurge > 2.0 && a > 0.05)     // 极其猛烈的抖动手腕（虽然本身晃动，但突然加紧）
     );
@@ -253,9 +253,9 @@ export default {
         self._lastTapTime = now;
         self._onTapDetected();
 
-        // 击打后临时拉高基线，防止后续回波二次触发
-        self._aBase = self._aBase + (aSurge * 0.5);
-        self._gBase = self._gBase + (gSurge * 0.5);
+        // 击打后临时拉高基线，防止后续回波二次触发 (惩罚系数降至 0.3 以防吞没后续的正常轻击)
+        self._aBase = self._aBase + (aSurge * 0.3);
+        self._gBase = self._gBase + (gSurge * 0.3);
       } else {
         console.info('[TAP_BLOCK] TOO FAST! gap:' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
       }
