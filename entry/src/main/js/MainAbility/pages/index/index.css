@@ -7,138 +7,20 @@
   background-color: #000000;
 }
 
-.view {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 466px;
-  height: 466px;
-}
-
-/* ========== 布局辅助 ========== */
-
-.spacer {
+.title {
+  font-size: 36px;
+  color: #FFFFFF;
+  margin-bottom: 20px;
   width: 466px;
   height: 50px;
-}
-
-.spacer-small {
-  width: 466px;
-  height: 20px;
-}
-
-.btn-row-bottom {
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  width: 466px;
-  height: 60px;
-}
-
-/* ========== 文本 ========== */
-
-
-
-.count-big-active {
-  font-size: 110px;
-  color: #FFFFFF;
-  font-weight: bold;
-  height: 120px;
   text-align: center;
-  width: 466px;
 }
 
-.count-big-paused {
-  font-size: 110px;
-  color: #888888;
-  font-weight: bold;
-  height: 120px;
-  text-align: center;
-  width: 466px;
-}
-
-.count-big-success {
-  font-size: 90px;
-  color: #FFFFFF;
-  font-weight: bold;
-  height: 100px;
-  text-align: center;
-  width: 466px;
-}
-
-.duration-medium {
+.val {
   font-size: 28px;
   color: #AAAAAA;
-  height: 36px;
-  text-align: center;
+  margin-bottom: 10px;
   width: 466px;
-}
-
-.paused-label {
-  font-size: 26px;
-  color: #FFD93D;
-  height: 36px;
-  text-align: center;
-  width: 466px;
-}
-
-.complete-title {
-  font-size: 28px;
-  color: #2ECC71;
   height: 40px;
   text-align: center;
-  width: 466px;
-}
-
-.stat-text {
-  font-size: 18px;
-  color: #AAAAAA;
-  height: 28px;
-  text-align: center;
-  width: 466px;
-}
-
-/* ========== 按钮 ========== */
-
-.btn-start-big {
-  width: 180px;
-  height: 180px;
-  border-radius: 90px;
-  background-color: #FF6B6B;
-  color: #FFFFFF;
-  font-size: 32px;
-  font-weight: bold;
-}
-
-.btn-pill-primary {
-  width: 160px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: #FF6B6B;
-  color: #FFFFFF;
-  font-size: 20px;
-  margin-left: 5px;
-  margin-right: 5px;
-}
-
-.btn-pill-secondary {
-  width: 140px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: #333333;
-  color: #FFFFFF;
-  font-size: 20px;
-  margin-left: 5px;
-  margin-right: 5px;
-}
-
-.btn-pill-danger {
-  width: 140px;
-  height: 56px;
-  border-radius: 28px;
-  background-color: #E74C3C;
-  color: #FFFFFF;
-  font-size: 20px;
-  margin-left: 5px;
-  margin-right: 5px;
 }

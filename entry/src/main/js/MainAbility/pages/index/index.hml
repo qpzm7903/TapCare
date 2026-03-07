@@ -1,44 +1,8 @@
 <div class="container">
-  <!-- 空闲状态 -->
-  <div class="view" if="{{isIdle}}">
-    <div class="spacer"></div>
-    <input type="button" class="btn-start-big" value="开始敲打" onclick="startSession" />
-    <div class="spacer"></div>
-  </div>
-
-  <!-- 计数状态 -->
-  <div class="view" elif="{{isCounting}}">
-    <div class="spacer-small"></div>
-    <text class="count-big-active">{{count}}</text>
-    <text class="duration-medium">{{durationText}}</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-secondary" value="暂停" onclick="pauseSession" />
-      <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
-    </div>
-  </div>
-
-  <!-- 暂停状态 -->
-  <div class="view" elif="{{isPaused}}">
-    <div class="spacer-small"></div>
-    <text class="count-big-paused">{{count}}</text>
-    <text class="paused-label">已暂停</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-primary" value="继续" onclick="resumeSession" />
-      <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
-    </div>
-  </div>
-
-  <!-- 完成状态 -->
-  <div class="view" elif="{{isCompleted}}">
-    <div class="spacer-small"></div>
-    <text class="complete-title">练习完成 🎉</text>
-    <text class="count-big-success">{{count}}</text>
-    <text class="stat-text">总时长 {{durationText}}</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-primary" value="再来一次" onclick="resetSession" />
-    </div>
-  </div>
+    <text class="title">模式: {{mode}}</text>
+    <text class="val">期望: {{expectedInterval}}ms</text>
+    <text class="val">实际平均: {{actualInterval}}ms</text>
+    <text class="val">最小: {{minInterval}}ms</text>
+    <text class="val">最大: {{maxInterval}}ms</text>
+    <text class="val">总次数: {{callbackCount}}</text>
 </div>

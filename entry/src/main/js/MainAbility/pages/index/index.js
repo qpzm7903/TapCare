@@ -1,401 +1,96 @@
 import sensor from '@system.sensor';
-import file from '@system.file';
 
-// 尝试导入振动器（部分固件可能不支持）
-var vibrator = null;
-try {
-  vibrator = require('@system.vibrator');
-} catch (e) {
-  console.warn('vibrator not available');
-}
-
-var PARTS = [
-  { id: 'gallbladder_left', name: '左胆经' },
-  { id: 'gallbladder_right', name: '右胆经' },
-  { id: 'pericardium', name: '心包经' },
-  { id: 'sanjiao', name: '三焦经' }
-];
-
-// 敲打检测参数（5Hz 采样率优化）
-var TAP = {
-  TAP_THRESHOLD: 0.18,      // 绝对阈值：0.18g（降低以捕获更多轻敲）
-  DELTA_THRESHOLD: 0.15,    // 帧间差值阈值：0.15g（捕获敲打边缘，留噪声余量）
-  MIN_DEBOUNCE_MS: 150      // 最小防抖 150ms
-};
-
-// Baseline 校准参数
-var CAL = {
-  SAMPLE_COUNT: 10,         // 采集 10 个样本（约 2 秒）
-  USE_LOWEST: 6             // 取最小的 6 个计算均值（排除运动干扰）
-};
-
-var SETTINGS_URI = 'internal://app/settings.json';
+var callbackCount = 0;
+var lastTime = 0;
+var intervals = [];
 
 export default {
   data: {
-    state: 'idle',
-    isIdle: true,
-    isCounting: false,
-    isPaused: false,
-    isCompleted: false,
-    count: 0,
-    partName: '左胆经',
-    durationText: '00:00'
+    mode: 'game',          // 切换成 game / ui / normal 测试
+    expectedInterval: 20,  // 根据 mode 动态更新
+    actualInterval: 0,     // 实际平均间隔 ms
+    callbackCount: 0,
+    minInterval: 9999,
+    maxInterval: 0,
   },
 
   onInit() {
-    console.info('TapCare page onInit');
-
-    this._partIndex = 0;
-    this._sensorActive = false;
-    this._baseline = 1.0;  // 初始值，启动后会自动校准
-
-    this._sessionStartTime = 0;
-    this._totalPauseDuration = 0;
-    this._pauseStartTime = 0;
-    this._lastTapTime = 0;
-    this._tapFired = false;  // 上升沿检测状态
-    this._tapPeak = 0;       // FIRED 期间跟踪峰值
-    this._prevMagnitude = -1; // 上一帧 magnitude，用于帧间差值检测
-
-    // Baseline 校准
-    this._baselineSamples = [];
-    this._baselineCalibrated = false;
-
-    this._durationTimer = null;
-    this._debugLogCount = 0;
-
-    this._loadSettings();
-  },
-
-  onReady() {
-    console.info('TapCare page onReady, state=' + this.state);
+    if (this.mode === 'game') this.expectedInterval = 20;
+    else if (this.mode === 'ui') this.expectedInterval = 60;
+    else this.expectedInterval = 200;
   },
 
   onShow() {
-    console.info('TapCare page onShow');
+    callbackCount = 0;
+    lastTime = 0;
+    intervals = [];
+    var self = this;
+
+    // 预览器中模拟数据
+    this._mockTimer = setInterval(function () {
+      callbackCount++;
+      self.callbackCount = callbackCount;
+      self.actualInterval = self.expectedInterval;
+      self.minInterval = self.expectedInterval;
+      self.maxInterval = self.expectedInterval;
+    }, this.expectedInterval);
+
+    try {
+      sensor.subscribeAccelerometer({
+        interval: this.mode,   // 'game' | 'ui' | 'normal'
+        success: function (ret) {
+
+          // 若收到真实数据，则清除模拟器
+          if (self._mockTimer) {
+            clearInterval(self._mockTimer);
+            self._mockTimer = null;
+            callbackCount = 0;
+            self.callbackCount = 0;
+          }
+
+          var now = Date.now();
+          callbackCount++;
+          self.callbackCount = callbackCount;
+
+          if (lastTime !== 0) {
+            var gap = now - lastTime;
+            intervals.push(gap);
+
+            // 保留最近20次计算平均值
+            if (intervals.length > 20) intervals.shift();
+
+            var sum = 0;
+            var min = 9999;
+            var max = 0;
+            for (var i = 0; i < intervals.length; i++) {
+              sum += intervals[i];
+              if (intervals[i] < min) min = intervals[i];
+              if (intervals[i] > max) max = intervals[i];
+            }
+            var avg = Math.round(sum / intervals.length);
+
+            self.actualInterval = avg;
+            self.minInterval = min;
+            self.maxInterval = max;
+          }
+          lastTime = now;
+        },
+        fail: function (data, code) {
+          console.error('订阅失败: ' + code + ' - ' + data);
+        }
+      });
+    } catch (e) {
+      console.error('Sensor API 不可用 (可能是预览器环境): ' + e);
+    }
   },
 
   onDestroy() {
-    this._stopSensor();
-    this._stopDurationTimer();
-  },
-
-  _setState(s) {
-    this.state = s;
-    this.isIdle = (s === 'idle');
-    this.isCounting = (s === 'counting');
-    this.isPaused = (s === 'paused');
-    this.isCompleted = (s === 'completed');
-  },
-
-  // ==================== UI 事件 ====================
-
-  switchPart() {
-    if (this.state !== 'idle') {
-      return;
-    }
-    this._partIndex = (this._partIndex + 1) % PARTS.length;
-    this.partName = PARTS[this._partIndex].name;
-    this._saveSettings();
-  },
-
-  startSession() {
-    console.info('startSession');
-    this.count = 0;
-    this.durationText = '00:00';
-
-    this._sessionStartTime = Date.now();
-    this._totalPauseDuration = 0;
-    this._pauseStartTime = 0;
-    this._lastTapTime = 0;
-    this._tapFired = false;
-    this._tapPeak = 0;
-    this._prevMagnitude = -1;
-    this._resetBaseline();
-    this._debugLogCount = 0;
-
-    this._setState('counting');
-    this._startSensor();
-    this._startDurationTimer();
-  },
-
-  pauseSession() {
-    this._pauseStartTime = Date.now();
-    this._setState('paused');
-    this._stopSensor();
-    this._stopDurationTimer();
-  },
-
-  resumeSession() {
-    if (this._pauseStartTime > 0) {
-      this._totalPauseDuration += Date.now() - this._pauseStartTime;
-      this._pauseStartTime = 0;
-    }
-    this._setState('counting');
-    this._startSensor();
-    this._startDurationTimer();
-  },
-
-  endSession() {
-    this._stopSensor();
-    this._stopDurationTimer();
-    this._completeSession();
-  },
-
-  resetSession() {
-    this.count = 0;
-    this.durationText = '00:00';
-    this._setState('idle');
-  },
-
-  // ==================== 会话完成 ====================
-
-  _completeSession() {
-    var elapsed = Date.now() - this._sessionStartTime - this._totalPauseDuration;
-    this.durationText = this._formatDuration(elapsed);
-    this._setState('completed');
-    this._saveSession(elapsed);
-  },
-
-  // ==================== 敲打检测 ====================
-
-  _processSensorData(x, y, z) {
-    var now = Date.now();
-    var magnitude = Math.sqrt(x * x + y * y + z * z);
-
-    // Baseline 校准：采集样本，取最小的几个均值（排除运动干扰）
-    if (!this._baselineCalibrated) {
-      this._baselineSamples.push(magnitude);
-      console.info('[CAL] ' + this._baselineSamples.length + '/' + CAL.SAMPLE_COUNT + ' mag=' + magnitude.toFixed(3));
-      if (this._baselineSamples.length >= CAL.SAMPLE_COUNT) {
-        // 手写冒泡排序（Lite Wearable 不支持 Array.sort）
-        var arr = this._baselineSamples;
-        var i;
-        var j;
-        var tmp;
-        for (i = 0; i < arr.length - 1; i++) {
-          for (j = 0; j < arr.length - 1 - i; j++) {
-            if (arr[j] > arr[j + 1]) {
-              tmp = arr[j];
-              arr[j] = arr[j + 1];
-              arr[j + 1] = tmp;
-            }
-          }
-        }
-        // 取最小的 CAL.USE_LOWEST 个样本的均值
-        var sum = 0;
-        for (i = 0; i < CAL.USE_LOWEST; i++) {
-          sum += arr[i];
-        }
-        this._baseline = sum / CAL.USE_LOWEST;
-        this._baselineCalibrated = true;
-        this._prevMagnitude = magnitude;  // 用最后一帧初始化，避免首帧 delta 异常
-        this._lastTapTime = now;          // 避免首帧 since 为天文数字导致误触发
-        console.info('[CAL] DONE baseline=' + this._baseline.toFixed(3) + ' (sorted: ' + arr[0].toFixed(2) + '~' + arr[arr.length - 1].toFixed(2) + ')');
-      }
-      return;
-    }
-
-    var dynamicAccel = Math.abs(magnitude - this._baseline);
-
-    // 帧间差值：当前帧与上一帧 magnitude 的变化量
-    var delta = 0;
-    if (this._prevMagnitude >= 0) {
-      delta = Math.abs(magnitude - this._prevMagnitude);
-    }
-    this._prevMagnitude = magnitude;
-
-    // 综合信号：取绝对偏移和帧间差值中较大的信号
-    // 绝对偏移捕获采到峰值的情况，帧间差值捕获采到边缘的情况
-    var dynHit = dynamicAccel >= TAP.TAP_THRESHOLD;
-    var deltaHit = delta >= TAP.DELTA_THRESHOLD;
-    var signal = Math.max(dynamicAccel, delta);
-
-    // 每 20 帧输出一次静态数据
-    this._debugLogCount += 1;
-    if (this._debugLogCount % 20 === 0) {
-      console.info('[IDLE] dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' base=' + this._baseline.toFixed(2));
-    }
-
-    // 上升沿检测：信号必须回落才能触发下一次
-    if (dynHit || deltaHit) {
-      if (!this._tapFired) {
-        var sinceLastTap = now - this._lastTapTime;
-        if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
-          this._tapFired = true;
-          this._tapPeak = signal;
-          var reason = dynHit && deltaHit ? 'BOTH' : (dynHit ? 'DYN' : 'DELTA');
-          console.info('[TAP] +++ FIRE ' + reason + ' dyn=' + dynamicAccel.toFixed(3) + ' delta=' + delta.toFixed(3) + ' since=' + sinceLastTap);
-          this._onTapDetected(signal, now);
-        } else {
-          console.info('[TAP] --- debounce skip (' + sinceLastTap + 'ms)');
-        }
-      } else {
-        if (signal > this._tapPeak) {
-          this._tapPeak = signal;
-        }
-      }
-    } else {
-      if (this._tapFired) {
-        console.info('[TAP] --- reset (peak was ' + this._tapPeak.toFixed(3) + ')');
-        this._tapFired = false;
-      }
-    }
-  },
-
-  _onTapDetected(peakAccel, timestamp) {
-    console.info('Tap detected! peak=' + peakAccel.toFixed(2));
-    this.count += 1;
-    this._lastTapTime = timestamp;
-
-    if (this.count % 100 === 0) {
-      this._vibrate();
-    }
-  },
-
-  _resetBaseline() {
-    this._baselineSamples = [];
-    this._baselineCalibrated = false;
-  },
-
-  // ==================== 传感器 ====================
-
-  _startSensor() {
-    if (this._sensorActive) {
-      return;
-    }
-    var self = this;
-    try {
-      sensor.subscribeAccelerometer({
-        interval: 'normal',
-        success: function(data) {
-          if (self.state === 'counting') {
-            self._processSensorData(data.x, data.y, data.z);
-          }
-        },
-        fail: function(data, code) {
-          console.error('sensor fail: ' + code + ', data: ' + JSON.stringify(data));
-          self._sensorActive = false;
-        }
-      });
-      this._sensorActive = true;
-      console.info('sensor started');
-    } catch (e) {
-      console.error('sensor error: ' + e);
-      this._sensorActive = false;
-    }
-  }
-,
-  _stopSensor() {
-    if (!this._sensorActive) {
-      return;
+    if (this._mockTimer) {
+      clearInterval(this._mockTimer);
+      this._mockTimer = null;
     }
     try {
       sensor.unsubscribeAccelerometer();
-    } catch (e) {
-      console.error('sensor unsub error: ' + e);
-    }
-    this._sensorActive = false;
-  },
-
-  // ==================== 振动 ====================
-
-  _vibrate() {
-    if (!vibrator) {
-      return;
-    }
-    try {
-      vibrator.vibrate({ mode: 'short' });
-    } catch (e) {
-      // 静默失败，不影响核心功能
-    }
-  },
-
-  // ==================== 计时器 ====================
-
-  _startDurationTimer() {
-    this._stopDurationTimer();
-    var self = this;
-    this._durationTimer = setInterval(function() {
-      var elapsed = Date.now() - self._sessionStartTime - self._totalPauseDuration;
-      self.durationText = self._formatDuration(elapsed);
-    }, 1000);
-  },
-
-  _stopDurationTimer() {
-    if (this._durationTimer) {
-      clearInterval(this._durationTimer);
-      this._durationTimer = null;
-    }
-  },
-
-  _formatDuration(ms) {
-    var totalSec = Math.floor(ms / 1000);
-    var min = Math.floor(totalSec / 60);
-    var sec = totalSec % 60;
-    return (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
-  },
-
-  // ==================== 持久化 ====================
-
-  _loadSettings() {
-    var self = this;
-    try {
-      file.readText({
-        uri: SETTINGS_URI,
-        success: function(data) {
-          try {
-            var s = JSON.parse(data.text);
-            if (s.partIndex !== undefined && s.partIndex < PARTS.length) {
-              self._partIndex = s.partIndex;
-              self.partName = PARTS[s.partIndex].name;
-            }
-            if (s.baseline) {
-              self._baseline = s.baseline;
-            }
-          } catch (e) {
-            console.error('parse settings: ' + e);
-          }
-        },
-        fail: function() {}
-      });
-    } catch (e) {
-      console.error('readText error: ' + e);
-    }
-  },
-
-  _saveSettings() {
-    try {
-      file.writeText({
-        uri: SETTINGS_URI,
-        text: JSON.stringify({
-          partIndex: this._partIndex,
-          baseline: this._baseline
-        }),
-        success: function() {},
-        fail: function() {}
-      });
-    } catch (e) {
-      console.error('writeText error: ' + e);
-    }
-  },
-
-  _saveSession(elapsed) {
-    try {
-      file.writeText({
-        uri: 'internal://app/last_session.json',
-        text: JSON.stringify({
-          timestamp: Date.now(),
-          part: PARTS[this._partIndex].id,
-          count: this.count,
-          duration: elapsed
-        }),
-        success: function() {},
-        fail: function() {}
-      });
-    } catch (e) {
-      console.error('save session error: ' + e);
-    }
+    } catch (e) { }
   }
-};
+}
