@@ -8,6 +8,14 @@
 
   <!-- 计数状态 -->
   <div class="view" elif="{{isCounting}}">
+    <!-- 调试数据悬浮层 -->
+    <div class="debug-panel">
+      <text class="debug-text">基线(B): {{debugBaseline}}</text>
+      <text class="debug-text">动能(D): {{debugDynAccel}} / {{debugPeak}}</text>
+      <text class="debug-text">冷却帧: {{debugCooldown}}</text>
+      <text class="debug-text">触发: {{debugFired ? 'YES' : 'NO'}}</text>
+    </div>
+
     <div class="spacer-small"></div>
     <text class="count-big-active">{{count}}</text>
     <text class="duration-medium">{{durationText}}</text>

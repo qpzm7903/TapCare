@@ -33,7 +33,14 @@ export default {
     isCompleted: false,
     count: 0,
     partName: '左胆经',
-    durationText: '00:00'
+    durationText: '00:00',
+
+    // Debug variables
+    debugBaseline: '0.00',
+    debugDynAccel: '0.00',
+    debugPeak: '0.00',
+    debugCooldown: 0,
+    debugFired: false
   },
 
   onInit() {
@@ -195,6 +202,16 @@ export default {
       if (this._tapFired) {
         this._tapFired = false;
       }
+    }
+
+    // 每间隔 10 帧 (约 200ms) 更新一次 UI 显示，避免高频刷新阻塞渲染线程
+    this._renderTick = (this._renderTick || 0) + 1;
+    if (this._renderTick % 10 === 0) {
+      this.debugBaseline = this._baseline.toFixed(3);
+      this.debugDynAccel = dynamicAccel.toFixed(3);
+      this.debugPeak = this._tapPeak.toFixed(3);
+      this.debugCooldown = this._cooldownTimer;
+      this.debugFired = this._tapFired;
     }
   },
 
