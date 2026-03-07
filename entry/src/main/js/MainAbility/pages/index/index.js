@@ -235,7 +235,7 @@ export default {
       self.debugBaseline = 'sub_start'; // 标记进入订阅流程
 
       sensor.subscribeAccelerometer({
-        interval: 'game',
+        interval: 'normal',
         success: function (data) {
           try {
             self._rawCbCount = (self._rawCbCount || 0) + 1;
