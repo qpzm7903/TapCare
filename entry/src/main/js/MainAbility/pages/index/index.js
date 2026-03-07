@@ -231,24 +231,28 @@ export default {
     }
     var self = this;
     try {
+      try { sensor.unsubscribeAccelerometer(); } catch (e) { }
       self.debugBaseline = 'sub_start'; // 标记进入订阅流程
 
       sensor.subscribeAccelerometer({
         interval: 'game',
         success: function (data) {
-          // 实时记录回调次数，证明底层还在推数据
-          self._rawCbCount = (self._rawCbCount || 0) + 1;
-          if (self._rawCbCount % 5 === 0) {
-            // 直接将最原始的回调计数绑到 UI，如果这里不走，说明回调彻底死掉
-            self.debugBaseline = 'CB: ' + self._rawCbCount;
-          }
+          try {
+            self._rawCbCount = (self._rawCbCount || 0) + 1;
 
-          if (self.state === 'counting') {
-            // 安全防护：万一 data 结构不对
-            var x = data.x || 0;
-            var y = data.y || 0;
-            var z = data.z || 0;
-            self._processSensorData(self, x, y, z);
+            // 每 1 帧都强制更新基线，证明收到数据
+            self.debugBaseline = 'CB: ' + self._rawCbCount;
+
+            if (self.state === 'counting') {
+              // 安全防护：万一 data 结构不对
+              var x = data.x || 0;
+              var y = data.y || 0;
+              var z = data.z || 0;
+              self._processSensorData(self, x, y, z);
+            }
+          } catch (err) {
+            // 捕获到任何隐藏的 JS 异常，直接拍到屏幕上
+            self.debugPeak = 'E:' + (err.message || err);
           }
         },
         fail: function (data, code) {
