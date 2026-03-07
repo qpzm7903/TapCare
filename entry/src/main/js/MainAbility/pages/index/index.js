@@ -57,9 +57,11 @@ export default {
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
 
-    // 零分配峰值检测状态
+    // 瞬态突变检测(Surge/高通滤波)状态
     this._lastTapTime = 0;  // 绝对时间倒数
-    this._tapFired = false;
+    this._aBase = 0;        // 加速度短期运动基线 (过滤挥臂慢动作)
+    this._gBase = 0;        // 角速度短期运动基线 (过滤挥臂慢动作)
+    this._tapPeak = 0; false;
     this._tapPeak = 0;
 
     // 传感器融合状态
@@ -105,10 +107,11 @@ export default {
     this._totalPauseDuration = 0;
     this._pauseStartTime = 0;
 
-    // 重置检测状态
+    // 重置瞬态检测状态
     this._baselineInitialized = false;
     this._lastTapTime = 0;
-    this._tapFired = false;
+    this._aBase = 0;
+    this._gBase = 0;
     this._tapPeak = 0;
     this._gyroPeak = 0;
 
@@ -174,8 +177,12 @@ export default {
 
     var dynamicAccel = Math.abs(magnitude - self._baseline);
 
-    if (dynamicAccel < 0.05) {
+    if (dynamicAccel < 0.1) {
+      // 快速适应微小姿态变化 (过滤干扰)
       self._baseline = self._baseline * 0.85 + magnitude * 0.15;
+    } else {
+      // 缓慢适应长时间偏离，防止因换姿势导致基线彻底卡死
+      self._baseline = self._baseline * 0.98 + magnitude * 0.02;
     }
 
     self._latestAccel = dynamicAccel;
@@ -204,50 +211,68 @@ export default {
   },
 
   _checkFusion(self, now) {
-    // 联合判定窗口: 保证两个传感器的数据都是在最近 300ms (1.5帧) 内到达的
+    // 联合判定窗口: 保证两个传感器的数据都是在最近 500ms (2.5帧) 内到达的
     var accelAge = now - (self._latestAccelTime || 0);
     var gyroAge = now - (self._latestGyroTime || 0);
-    var isDataFresh = accelAge < 300 && gyroAge < 300;
+    var isDataFresh = accelAge < 500 && gyroAge < 500;
+
+    if (!isDataFresh) return;
+
+    var a = self._latestAccel;
+    var g = self._latestGyro;
+
+    // 1. 初始化短期跟随基线 (如果尚未记录)
+    if (self._aBase === 0 && self._gBase === 0) {
+      self._aBase = a;
+      self._gBase = g;
+      return;
+    }
+
+    // 2. 提取当前“挥臂”的平滑运动基线 (Low-Pass Filter) -> 70% 沿用老趋势，30% 取最新值
+    // 取值如果小于当前基线，则加速回落（避免错失下次判定）；如果大于当前基线，则缓慢上升（防止过滤掉波峰）
+    self._aBase = (self._aBase * (a < self._aBase ? 0.5 : 0.8)) + (a * (a < self._aBase ? 0.5 : 0.2));
+    self._gBase = (self._gBase * (g < self._gBase ? 0.5 : 0.8)) + (g * (g < self._gBase ? 0.5 : 0.2));
+
+    // 3. 计算“相对于长期运动”的瞬态突波幅值 (High-Pass Filter 冲击量)
+    var aSurge = a - self._aBase;
+    var gSurge = g - self._gBase;
 
     var sinceLastTap = now - self._lastTapTime;
 
-    // 联合条件：加速度有扰动 (>0.015G) 且 存在手腕旋转撞击 (>1.5 rad/s)
-    if (isDataFresh && self._latestAccel > 0.015 && self._latestGyro > 1.5) {
-      if (!self._tapFired && sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
+    // 4. 动态敲击判定 (依赖瞬变 Surge，不再依赖绝对阈值防止卡死)
+    var isTap = (
+      (aSurge > 0.10 && g > 1.5) ||  // 典型动作：产生了中等振动差，且手臂在快速甩动
+      (aSurge > 0.15) ||             // 纯强力打击：不管手转没转，肉体发生了剧烈形变振颤
+      (gSurge > 2.0 && a > 0.05)     // 极其猛烈的抖动手腕（虽然本身晃动，但突然加紧）
+    );
+
+    if (isTap) {
+      if (sinceLastTap >= TAP.MIN_DEBOUNCE_MS) {
         // 触发一次有效敲击
-        console.info('[TAP_HIT] A:' + self._latestAccel.toFixed(3) + ' G:' + self._latestGyro.toFixed(3) + ' (gap:' + sinceLastTap + 'ms)');
-        self._tapFired = true;
+        console.info('[TAP_HIT] A:' + a.toFixed(3) + ' (Surge:' + aSurge.toFixed(3) + ') G:' + g.toFixed(3) + ' (gap:' + sinceLastTap + 'ms)');
         self._lastTapTime = now;
         self._onTapDetected();
+
+        // 击打后临时拉高基线，防止后续回波二次触发
+        self._aBase = self._aBase + (aSurge * 0.5);
+        self._gBase = self._gBase + (gSurge * 0.5);
       } else {
-        if (self._tapFired) {
-          console.info('[TAP_BLOCK] LATCHED! gap:' + sinceLastTap + 'ms');
-        } else {
-          console.info('[TAP_BLOCK] TOO FAST! gap:' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
-        }
+        console.info('[TAP_BLOCK] TOO FAST! gap:' + sinceLastTap + 'ms < ' + TAP.MIN_DEBOUNCE_MS);
       }
-    } else if (isDataFresh && (self._latestAccel > 0.015 || self._latestGyro > 1.5)) {
-      // 如果只有一个传感器达到了阈值，打印出来看看是哪个差了一口气
-      console.info('[TAP_MISS] A:' + self._latestAccel.toFixed(3) + ' G:' + self._latestGyro.toFixed(3));
+    } else if (aSurge > 0.03 || gSurge > 0.8) {
+      // 记录那些看似高扬，但未能构成“突刺”的平滑动作，以便排查
+      console.info('[TAP_MISS] A:' + a.toFixed(3) + ' (Surge:' + aSurge.toFixed(3) + ') G:' + g.toFixed(3));
     }
 
-    // 回落解除锁定状态：任一传感器降下来，或者距离上次敲击已经过了足够长时间(800ms)强制解锁，防止死锁
-    if (self._tapFired) {
-      if (self._latestAccel < 0.015 || self._latestGyro < 1.0 || sinceLastTap > 800) {
-        self._tapFired = false;
-        console.info('[TAP_RESET] Unlatched! gap:' + sinceLastTap + 'ms');
-      }
-    }
-
-    // UI 显示
+    // UI 显示 (如果需要)
     self._renderTick = (self._renderTick || 0) + 1;
     if (self._renderTick % 2 === 0) {
       self.debugBaseline = self._baseline.toFixed(3);
       self.debugDynAccel = (self._latestAccel || 0).toFixed(3);
-      self.debugPeak = self._tapPeak.toFixed(3);
+      self.debugPeak = (aSurge > 0 ? aSurge : 0).toFixed(3); // 改为显示瞬变值
       self.debugGyro = (self._latestGyro || 0).toFixed(3);
-      self.debugGyroPeak = self._gyroPeak.toFixed(3);
-      self.debugFired = self._tapFired;
+      self.debugGyroPeak = (gSurge > 0 ? gSurge : 0).toFixed(3);
+      self.debugFired = (sinceLastTap < 400);
     }
   },
 
