@@ -14,3 +14,5 @@
 build-profile.json5
 /.sisyphus
 /logs/
+.env
+*.bak_*
