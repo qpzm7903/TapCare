@@ -33,15 +33,7 @@ export default {
     isCompleted: false,
     count: 0,
     partName: '左胆经',
-    durationText: '00:00',
-
-    // Debug variables
-    debugBaseline: '0.00',
-    debugDynAccel: '0.00',
-    debugPeak: '0.00',
-    debugGyro: '0.00',
-    debugGyroPeak: '0.00',
-    debugFired: false
+    durationText: '00:00'
   },
 
   onInit() {
@@ -264,16 +256,6 @@ export default {
       console.info('[TAP_MISS] A:' + a.toFixed(3) + ' (Surge:' + aSurge.toFixed(3) + ') G:' + g.toFixed(3));
     }
 
-    // UI 显示 (如果需要)
-    self._renderTick = (self._renderTick || 0) + 1;
-    if (self._renderTick % 2 === 0) {
-      self.debugBaseline = self._baseline.toFixed(3);
-      self.debugDynAccel = (self._latestAccel || 0).toFixed(3);
-      self.debugPeak = (aSurge > 0 ? aSurge : 0).toFixed(3); // 改为显示瞬变值
-      self.debugGyro = (self._latestGyro || 0).toFixed(3);
-      self.debugGyroPeak = (gSurge > 0 ? gSurge : 0).toFixed(3);
-      self.debugFired = (sinceLastTap < 400);
-    }
   },
 
   _onTapDetected() {
@@ -294,25 +276,20 @@ export default {
     try {
       try { sensor.unsubscribeAccelerometer(); } catch (e) { }
       try { sensor.unsubscribeGyroscope(); } catch (e) { }
-      self.debugBaseline = 'sub_start'; // 标记进入订阅流程
 
       sensor.subscribeAccelerometer({
         interval: 'normal',
         success: function (data) {
           try {
             self._rawCbCount = (self._rawCbCount || 0) + 1;
-            // 收到加速度即更新心跳
-            self.debugBaseline = 'CBA:' + self._rawCbCount;
 
             if (self.state === 'counting') {
               self._processAccel(self, data.x || 0, data.y || 0, data.z || 0);
             }
           } catch (err) {
-            self.debugPeak = 'EA:' + (err.message || err);
           }
         },
         fail: function (data, code) {
-          self.debugPeak = 'FAIL A: ' + code;
           self._sensorActive = false;
         }
       });
@@ -325,19 +302,15 @@ export default {
               self._processGyro(self, data.x || 0, data.y || 0, data.z || 0);
             }
           } catch (err) {
-            self.debugGyroPeak = 'EG:' + (err.message || err);
           }
         },
         fail: function (data, code) {
-          self.debugGyroPeak = 'FAIL G: ' + code;
           self._sensorActive = false;
         }
       });
 
       this._sensorActive = true;
-      self.debugDynAccel = 'subs_OK'; // 标记订阅API调用成功
     } catch (e) {
-      self.debugPeak = 'EXC: ' + e;
       this._sensorActive = false;
     }
   },
