@@ -27,7 +27,7 @@ var SETTINGS_URI = 'internal://app/settings.json';
 
 export default {
   data: {
-    showPrivacy: false,
+    showPrivacy: true,
     state: 'idle',
     isIdle: true,
     isCounting: false,
@@ -425,6 +425,7 @@ export default {
       });
     } catch (e) {
       console.error('readText error: ' + e);
+      self.showPrivacy = true;
     }
   },
 

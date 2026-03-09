@@ -5,10 +5,10 @@
       <text class="privacy-title">隐私与用户协议</text>
     </list-item>
     <list-item class="privacy-item-content" clickeffect="false">
-      <text class="privacy-content">本应用仅在本地使用内置传感器检测敲击动作，为您提供计数服务。</text>
+      <text class="privacy-content">使用传感器检测敲击计数。</text>
     </list-item>
     <list-item class="privacy-item-content" clickeffect="false">
-      <text class="privacy-content">所有数据仅在设备本地实时处理，不存储、不上传，且不收集任何个人隐私数据。</text>
+      <text class="privacy-content">数据本地处理，不收集隐私。</text>
     </list-item>
     <list-item class="privacy-item-btn" clickeffect="false">
       <div class="btn-row-bottom">
