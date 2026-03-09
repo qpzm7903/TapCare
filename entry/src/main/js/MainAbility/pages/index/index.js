@@ -1,6 +1,7 @@
 import sensor from '@system.sensor';
 import file from '@system.file';
 import app from '@system.app';
+import brightness from '@system.brightness';
 
 // 尝试导入振动器（部分固件可能不支持）
 var vibrator = null;
@@ -65,12 +66,19 @@ export default {
     this._gyroPeak = 0;
 
     this._durationTimer = null;
-    this._loadSettings();
+    // this._loadSettings();
   },
 
   onReady() { },
-  onShow() { },
+  onShow() {
+    try {
+      brightness.setKeepScreenOn({ keepScreenOn: true });
+    } catch (e) { }
+  },
   onHide() {
+    try {
+      brightness.setKeepScreenOn({ keepScreenOn: false });
+    } catch (e) { }
     // 适配审核问题：按表冠进入后台时，如在计时状态，应自动暂停，避免再次进入时由于系统挂起导致状态异常或直接退出
     if (this.state === 'counting') {
       this.pauseSession();
