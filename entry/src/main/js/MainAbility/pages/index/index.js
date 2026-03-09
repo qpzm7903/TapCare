@@ -1,5 +1,6 @@
 import sensor from '@system.sensor';
 import file from '@system.file';
+import app from '@system.app';
 
 // 尝试导入振动器（部分固件可能不支持）
 var vibrator = null;
@@ -26,6 +27,7 @@ var SETTINGS_URI = 'internal://app/settings.json';
 
 export default {
   data: {
+    showPrivacy: false,
     state: 'idle',
     isIdle: true,
     isCounting: false,
@@ -53,7 +55,6 @@ export default {
     this._lastTapTime = 0;  // 绝对时间倒数
     this._aBase = 0;        // 加速度短期运动基线 (过滤挥臂慢动作)
     this._gBase = 0;        // 角速度短期运动基线 (过滤挥臂慢动作)
-    this._tapPeak = 0; false;
     this._tapPeak = 0;
 
     // 传感器融合状态
@@ -69,9 +70,34 @@ export default {
 
   onReady() { },
   onShow() { },
+  onHide() {
+    // 适配审核问题：按表冠进入后台时，如在计时状态，应自动暂停，避免再次进入时由于系统挂起导致状态异常或直接退出
+    if (this.state === 'counting') {
+      this.pauseSession();
+    }
+  },
   onDestroy() {
     this._stopSensor();
     this._stopDurationTimer();
+  },
+
+  // ==================== 应用生命周期 / 系统交互 ====================
+
+  handleSwipe(e) {
+    // 修复拒绝理由 3.2：右滑无法退出
+    if (e.direction === 'right') {
+      app.terminate();
+    }
+  },
+
+  agreePrivacy() {
+    this.showPrivacy = false;
+    this._saveSettings(); // save settings will persist privacyAgreed
+  },
+
+  disagreePrivacy() {
+    // 若不同意隐私政策，直接退出应用
+    app.terminate();
   },
 
   _setState(s) {
@@ -376,6 +402,11 @@ export default {
         success: function (data) {
           try {
             var s = JSON.parse(data.text);
+            if (s.privacyAgreed) {
+              self.showPrivacy = false;
+            } else {
+              self.showPrivacy = true;
+            }
             if (s.partIndex !== undefined && s.partIndex < PARTS.length) {
               self._partIndex = s.partIndex;
               self.partName = PARTS[s.partIndex].name;
@@ -385,9 +416,12 @@ export default {
             }
           } catch (e) {
             console.error('parse settings: ' + e);
+            self.showPrivacy = true;
           }
         },
-        fail: function () { }
+        fail: function () {
+          self.showPrivacy = true;
+        }
       });
     } catch (e) {
       console.error('readText error: ' + e);
@@ -399,6 +433,7 @@ export default {
       file.writeText({
         uri: SETTINGS_URI,
         text: JSON.stringify({
+          privacyAgreed: !this.showPrivacy,
           partIndex: this._partIndex,
           baseline: this._baseline
         }),

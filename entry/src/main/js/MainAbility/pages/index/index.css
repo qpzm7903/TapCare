@@ -1,6 +1,6 @@
 .container {
-  width: 466px;
-  height: 466px;
+  width: 100%;
+  height: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -11,8 +11,47 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 466px;
-  height: 466px;
+  width: 100%;
+  height: 100%;
+}
+
+.privacy-item-title {
+  width: 100%;
+  height: 80px;
+  justify-content: center;
+  align-items: center;
+}
+
+.privacy-item-content {
+  width: 100%;
+  flex-direction: column;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin-top: 10px;
+  margin-bottom: 5px;
+}
+
+.privacy-item-btn {
+  width: 100%;
+  height: 120px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.privacy-title {
+  font-size: 32px;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.privacy-content {
+  font-size: 26px;
+  color: #AAAAAA;
+  width: 100%;
+  text-align: center;
+  line-height: 38px;
 }
 
 /* ========== 布局辅助 ========== */

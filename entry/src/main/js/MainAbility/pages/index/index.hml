@@ -1,46 +1,64 @@
-<div class="container">
-  <!-- 空闲状态 -->
-  <div class="view" if="{{isIdle}}">
-    <div class="spacer"></div>
-    <input type="button" class="btn-start-big" value="开始敲打" onclick="startSession" />
-    <div class="spacer"></div>
-  </div>
+<div class="container" onswipe="handleSwipe">
+  <!-- 隐私协议独立图层 -->
+  <list class="view" if="{{showPrivacy}}">
+    <list-item class="privacy-item-title" clickeffect="false">
+      <text class="privacy-title">隐私与用户协议</text>
+    </list-item>
+    <list-item class="privacy-item-content" clickeffect="false">
+      <text class="privacy-content">本应用仅在本地使用内置传感器检测敲击动作，为您提供计数服务。</text>
+    </list-item>
+    <list-item class="privacy-item-content" clickeffect="false">
+      <text class="privacy-content">所有数据仅在设备本地实时处理，不存储、不上传，且不收集任何个人隐私数据。</text>
+    </list-item>
+    <list-item class="privacy-item-btn" clickeffect="false">
+      <div class="btn-row-bottom">
+        <input type="button" class="btn-pill-secondary" value="不同意" onclick="disagreePrivacy" />
+        <input type="button" class="btn-pill-primary" value="同意" onclick="agreePrivacy" />
+      </div>
+    </list-item>
+  </list>
 
-  <!-- 计数状态 -->
-  <div class="view" elif="{{isCounting}}">
-    <!-- 调试数据悬浮层被移除 -->
-
-    <div class="spacer-small"></div>
-    <text class="count-big-active">{{count}}</text>
-    <text class="duration-medium">{{durationText}}</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-secondary" value="暂停" onclick="pauseSession" />
-      <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
+  <!-- 主应用界面 (非隐私状态) -->
+  <div class="view" else>
+    <!-- 空闲状态 -->
+    <div class="view" if="{{isIdle}}">
+      <input type="button" class="btn-start-big" value="开始敲打" onclick="startSession" />
     </div>
-  </div>
 
-  <!-- 暂停状态 -->
-  <div class="view" elif="{{isPaused}}">
-    <div class="spacer-small"></div>
-    <text class="count-big-paused">{{count}}</text>
-    <text class="paused-label">已暂停</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-primary" value="继续" onclick="resumeSession" />
-      <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
+    <!-- 计数状态 -->
+    <div class="view" elif="{{isCounting}}">
+      <div class="spacer-small"></div>
+      <text class="count-big-active">{{count}}</text>
+      <text class="duration-medium">{{durationText}}</text>
+      <div class="spacer-small"></div>
+      <div class="btn-row-bottom">
+        <input type="button" class="btn-pill-secondary" value="暂停" onclick="pauseSession" />
+        <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
+      </div>
     </div>
-  </div>
 
-  <!-- 完成状态 -->
-  <div class="view" elif="{{isCompleted}}">
-    <div class="spacer-small"></div>
-    <text class="complete-title">练习完成 🎉</text>
-    <text class="count-big-success">{{count}}</text>
-    <text class="stat-text">总时长 {{durationText}}</text>
-    <div class="spacer-small"></div>
-    <div class="btn-row-bottom">
-      <input type="button" class="btn-pill-primary" value="再来一次" onclick="resetSession" />
+    <!-- 暂停状态 -->
+    <div class="view" elif="{{isPaused}}">
+      <div class="spacer-small"></div>
+      <text class="count-big-paused">{{count}}</text>
+      <text class="paused-label">已暂停</text>
+      <div class="spacer-small"></div>
+      <div class="btn-row-bottom">
+        <input type="button" class="btn-pill-primary" value="继续" onclick="resumeSession" />
+        <input type="button" class="btn-pill-danger" value="结束" onclick="endSession" />
+      </div>
+    </div>
+
+    <!-- 完成状态 -->
+    <div class="view" elif="{{isCompleted}}">
+      <div class="spacer-small"></div>
+      <text class="complete-title">练习完成 🎉</text>
+      <text class="count-big-success">{{count}}</text>
+      <text class="stat-text">总时长 {{durationText}}</text>
+      <div class="spacer-small"></div>
+      <div class="btn-row-bottom">
+        <input type="button" class="btn-pill-primary" value="再来一次" onclick="resetSession" />
+      </div>
     </div>
   </div>
 </div>
