@@ -14,10 +14,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 构建与部署
 
-本项目使用 **DevEco Studio** 构建，不支持命令行构建：
+> 详细命令、踩坑记录、故障排查见 [docs/build-and-deploy.md](./docs/build-and-deploy.md)
+
+本项目支持 **命令行构建（hvigorw）** 与 **DevEco Studio GUI 构建** 两种方式。日常推荐命令行：
+
+### 命令行构建（推荐）
+
+```bash
+./scripts/build-hap.sh debug     # debug 证书签名，给应用调测助手用
+./scripts/build-hap.sh release   # release 证书签名，给 AGC 上架审核用
+```
+
+输出路径：
+- Debug:   `entry/build/debug/outputs/default/entry-default-signed.hap`
+- Release: `entry/build/default/outputs/default/entry-default-signed.hap`
+
+### 双签名机制（重要）
+
+`build-profile.json5` 内声明了两套 signingConfig + 两个 product：
+- `signingConfig=default` + `product=default` → release 证书 (`healthcounter_release.cer`)
+- `signingConfig=debug`   + `product=debug`   → debug 证书 (`test.cer`)
+
+`-p product=` 决定签名，`-p buildMode=` 只决定构建选项（压缩/混淆）。光改 buildMode 不会切证书。
+
+**Lite Wearable 特性**：debug HAP 内只含 `entry-default-signed.bin`（无 config.json），release HAP 才是常规结构（config.json + assets/）。这是正常的，不是构建错误。
+
+### DevEco Studio GUI 构建（兼容）
 
 - 构建: `Build → Build Hap(s) → Build Debug Hap(s)`
-- 输出: `entry/build/default/outputs/default/entry-default-signed.hap`
 - 安装: 通过「应用调测助手」App 蓝牙传输 HAP 到手表
 - 调试: `console.log` 输出通过应用调测助手查看
 
