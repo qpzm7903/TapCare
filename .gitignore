@@ -16,3 +16,7 @@ build-profile.json5
 /logs/
 .env
 *.bak_*
+_bmad/*
+.agent/*
+.agents/*
+.claude/*

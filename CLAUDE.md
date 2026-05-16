@@ -4,137 +4,74 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**我敲 (TapCare)** — 运行在华为 GT4/GT6 手表上的中医经络敲打健康练习应用。通过加速度+陀螺仪传感器实现敲打动作检测、计数、力度识别和练习记录。
+**我敲 (TapCare)** — 运行在华为 GT4/GT6 手表上的中医经络敲打健康练习应用。基于 5Hz 加速度传感器 + 峰值检测算法实现敲打动作计数、力度识别、节奏评估和练习记录。
 
 - **平台**: HarmonyOS Lite Wearable (GT4/GT6, HarmonyOS 5.0+)
 - **开发模型**: FA 模型（不是 Stage 模型）
 - **语言**: JavaScript（不是 ArkTS）
-- **UI 框架**: ArkUI Lite（类 Web 三件套：HML + CSS + JS）
+- **UI 框架**: ArkUI Lite（HML + CSS + JS 三件套）
 - **屏幕尺寸**: 466px 圆形表盘
 
-## 构建与部署
+> **⚠️ 陀螺仪融合方案已搁置**：尽管 `config.json` 中保留了 `GYROSCOPE` 权限，但当前算法只用加速度计单路。详见 `.sisyphus/plans/archived/gyroscope-fusion-plan.md`。
 
-> 详细命令、踩坑记录、故障排查见 [docs/build-and-deploy.md](./docs/build-and-deploy.md)
+---
 
-本项目支持 **命令行构建（hvigorw）** 与 **DevEco Studio GUI 构建** 两种方式。日常推荐命令行：
+## 🔑 权威信息源（必读）
 
-### 命令行构建（推荐）
+**所有项目规则与约束以 [`_bmad-output/project-context.md`](./_bmad-output/project-context.md) 为准**，包括：
+
+- 技术栈版本约束（SDK、构建工具）
+- JavaScript 运行时限制（异步、GC、文件体积等）
+- ArkUI Lite / FA 模型约束（HML、CSS、生命周期、config.json）
+- 传感器与硬件特性
+- 持久化、命名、注释规范
+- 安装错误速查表与审核要求
+
+@_bmad-output/project-context.md
+
+其他文档分工：
+
+| 文档 | 用途 |
+|------|------|
+| `README.md` | 算法详解、版本状态、开发计划 |
+| `AGENTS.md` | 项目结构、新增页面步骤、错误处理表（面向 AI agent 的操作手册） |
+| `docs/build-and-deploy.md` | 构建部署详细命令、踩坑记录、故障排查 |
+| `docs/tap-detection-algorithm.md` | 敲打检测算法参考 |
+| `doc-ref.md` | HarmonyOS Lite Wearable 外部参考链接 |
+| `PRD.md` | ⚠️ 已脱节，仅参考产品愿景和用户画像章节 |
+
+---
+
+## Claude Code 专属指引
+
+### 构建与部署快捷方式
 
 ```bash
-./scripts/build-hap.sh debug     # debug 证书签名，给应用调测助手用
-./scripts/build-hap.sh release   # release 证书签名，给 AGC 上架审核用
+./scripts/build-hap.sh debug          # debug 证书签名，给「应用调测助手」用
+./scripts/build-hap.sh release        # release 证书签名，给 AGC 上架审核用
+./scripts/build-hap.sh debug --push   # 构建并通过 hdc 推送到手机 /sdcard/haps/
 ```
 
 输出路径：
 - Debug:   `entry/build/debug/outputs/default/entry-default-signed.hap`
 - Release: `entry/build/default/outputs/default/entry-default-signed.hap`
 
-### 双签名机制（重要）
+完整命令、双签名机制、HAP 包结构差异、故障排查 → [docs/build-and-deploy.md](./docs/build-and-deploy.md)
 
-`build-profile.json5` 内声明了两套 signingConfig + 两个 product：
-- `signingConfig=default` + `product=default` → release 证书 (`healthcounter_release.cer`)
-- `signingConfig=debug`   + `product=debug`   → debug 证书 (`test.cer`)
+### 工作流偏好
 
-`-p product=` 决定签名，`-p buildMode=` 只决定构建选项（压缩/混淆）。光改 buildMode 不会切证书。
+- **修代码前先读 `project-context.md`**，关键约束都在里面
+- **算法参数调整**：必须在注释里写清楚调整原因和预期效果（不写 PR 就拒）
+- **`config.json` 改动**：每次发布前 `app.version.code` 必须递增
+- **不要主动 commit**，除非用户明确说"提交"
+- **历史任务计划**：`.sisyphus/plans/archived/` 是历史快照，不要据此推断当前状态
 
-**Lite Wearable 特性**：debug HAP 内只含 `entry-default-signed.bin`（无 config.json），release HAP 才是常规结构（config.json + assets/）。这是正常的，不是构建错误。
+### 验证循环（无自动化测试）
 
-### DevEco Studio GUI 构建（兼容）
+修改 → `./scripts/build-hap.sh debug --push` → 手表安装 → 真机操作 → 日志截图 OCR 提取。单次约 2-3 分钟。
 
-- 构建: `Build → Build Hap(s) → Build Debug Hap(s)`
-- 安装: 通过「应用调测助手」App 蓝牙传输 HAP 到手表
-- 调试: `console.log` 输出通过应用调测助手查看
+---
 
-签名为手动配置（AGC 申请证书），不支持自动签名。
-
-## 关键架构约束
-
-### FA 模型（非 Stage 模型）
-
-- 唯一配置文件是 `entry/src/main/config.json`，**绝对不能**创建或修改 `module.json5`
-- 如果项目中出现 `AppScope/` 目录或 `.ets` 文件，说明项目结构错误
-- `config.json` 中 `module.deviceType` 必须是 `["liteWearable"]`
-
-### Lite Wearable config.json 限制（踩坑记录）
-
-- `config.json` **顶层只允许** `app`、`deviceConfig`、`module` 三个 key，写其他字段会构建报错
-- `module` 内**不支持** `reqPermissions` 字段，安装到手表时会报 `module.abilities.permissions 字段不合法`
-- Lite Wearable 上 `@system.sensor` 的加速度传感器（`subscribeAccelerometer`）**无需权限声明**，直接调用即可
-- **不要**在 config.json 中添加任何权限相关配置（`reqPermissions`、`defPermissions` 等），Lite Wearable 不支持
-
-### 传感器采样率限制（GT6 真机验证）
-
-- `subscribeAccelerometer` 的 `interval` 参数只有 `'normal'` 能工作，实际采样率约 **5Hz（每 200ms 一帧）**
-- `'game'` 和 `'ui'` 模式均**静默失败**：subscribe 不报错，但 success 回调永远不触发（0 帧）
-- **不要尝试切换 interval 模式来提升采样率**，5Hz 是硬限制，只能在算法层面优化
-- 传感器返回**去重力后的线性加速度（单位 g）**，静止时 magnitude ≈ 0.25g
-
-### 网络与 JS 运行时限制
-
-Lite Wearable 运行裁剪版 JS 引擎：
-
-- **完全禁用**: `XMLHttpRequest`、WebSocket、`async/await`、`Proxy`、复杂解构
-- **部分可用 (Fetch)**: 虽然支持 `fetch`，但**极其受限**，属于严重的不稳定因素：
-  - GT5及之前运动表+iOS 手机配对：无网络请求能力。
-  - 欧洲地区：无网络请求能力。
-  - **Payload 炸弹**：请求头超 **2KB** 或 单包传输数据超 **7KB** 将直接失败。
-- **推荐替代**: 使用 `@system.bridge` 与手机端配合，由手机端执行复杂应用逻辑。
-- **可用**: `setTimeout`/`setInterval`、`@system.sensor`、`@system.file`、`console.log`、`router.push()`
-- **文件体积限制**: 单个界面的 `.js` 逻辑文件大小**严禁超过 48KB**。
-- **不支持的 CSS**:
-  - `rem/em/vw/vh`、`@keyframes` 动画
-  - **CSS 布局坍塌陷阱**: 在多层嵌套的 `div` 中使用 `flex-grow: 1` 或高级 Flex 属性极易导致渲染引擎计算失败，使容器高度变为 0。在手表屏幕（466px）布局时，必须使用**最扁平的 DOM 结构**、**绝对的高度数值**以及**实体 `spacer` 占位块**来进行间距排版。
-- 手表无独立联网能力，不要编写任何网络请求代码
-
-### SDK 版本约束
-
-`build-profile.json5` 中的 SDK 版本：
-- `targetSdkVersion` 不能高于 `"6.0.2(22)"`
-- `compatibleSdkVersion` 不能高于 `"4.0.0(10)"`
-
-### 命名约束
-
-- 当前 `config.json` 中的 `com.huawei.healthcounter` 不用改
-
-## 代码结构
-
-```
-entry/src/main/
-├── config.json                    # FA 模型核心配置（页面路由、权限、设备类型）
-└── js/MainAbility/
-    ├── app.js                     # 全局生命周期 (onCreate/onDestroy)
-    └── pages/
-        └── index/
-            ├── index.hml          # 页面布局模板（Mustache 语法绑定）
-            ├── index.css          # 页面样式（px 或百分比单位）
-            └── index.js           # 页面逻辑（data + 生命周期 + 方法）
-```
-
-## 页面开发模式
-
-每个页面由同目录下的 `.hml` + `.css` + `.js` 三个文件组成：
-
-```javascript
-// index.js — 组件定义模式
-export default {
-  data: { /* 响应式数据 */ },
-  onInit() { /* 页面初始化 */ },
-  onShow() { /* 页面显示 */ },
-  onDestroy() { /* 页面销毁 */ },
-  // 自定义方法
-}
-```
-
-新增页面步骤：
-1. 在 `pages/` 下新建目录和三件套文件
-2. 在 `config.json` 的 `module.js[0].pages` 数组中注册路径
-3. 使用 `router.push({ uri: 'pages/xxx/index' })` 跳转
-
-生命周期顺序：`onInit()` → `onReady()` → `onShow()`；页面切换时前一页先 `onDestroy()`。
-
-
-# 详细语法支持参考
+## 详细语法支持参考
 
 @doc-ref.md
-
-
