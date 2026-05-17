@@ -3,8 +3,8 @@
     "bundleName": "com.huawei.healthcounter",
     "vendor": "example",
     "version": {
-      "code": 1000000,
-      "name": "1.0.0"
+      "code": 1000005,
+      "name": "1.0.10"
     },
     "apiVersion": {
       "compatible": 6,
